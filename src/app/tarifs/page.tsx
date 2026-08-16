@@ -31,7 +31,7 @@ export default async function PricingPage() {
       )}
 
       <div className="mt-14 grid gap-8 lg:grid-cols-2 lg:mx-auto lg:max-w-4xl">
-        {(Object.entries(PLANS) as [keyof typeof PLANS, typeof PLANS.monthly][]).map(
+        {(Object.entries(PLANS) as [keyof typeof PLANS, typeof PLANS[keyof typeof PLANS]][]).map(
           ([key, plan]) => (
             <div
               key={key}
