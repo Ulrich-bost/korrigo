@@ -8,7 +8,11 @@ interface Props {
 }
 
 export function AdminSubjectForm({ universities }: Props) {
-  const [state, formAction] = useFormState(createSubjectAction, undefined);
+  const [state, formAction] = useFormState(
+    async (_: { error?: string } | undefined, formData: FormData) =>
+      createSubjectAction(formData),
+    undefined
+  );
 
   return (
     <div className="card">

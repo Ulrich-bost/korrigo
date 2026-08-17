@@ -4,7 +4,11 @@ import { useFormState } from "react-dom";
 import { createUniversityAction } from "@/app/actions/admin";
 
 export function AdminUniversityForm() {
-  const [state, formAction] = useFormState(createUniversityAction, undefined);
+  const [state, formAction] = useFormState(
+    async (_: { error?: string } | undefined, formData: FormData) =>
+      createUniversityAction(formData),
+    undefined
+  );
 
   return (
     <div className="card">

@@ -31,9 +31,9 @@ export function SubjectFilters({ universities, faculties, current }: SubjectFilt
         e.preventDefault();
         const fd = new FormData(e.currentTarget);
         const params = new URLSearchParams();
-        for (const [k, v] of fd.entries()) {
+        fd.forEach((v, k) => {
           if (v) params.set(k, v.toString());
-        }
+        });
         router.push(`/sujets?${params.toString()}`);
       }}
     >
