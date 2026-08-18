@@ -1,6 +1,6 @@
 # UnivSujets
 
-Plateforme web regroupant les **sujets d'examen corrigés** de l'université, avec abonnement **mensuel** (9,99 €) ou **annuel** (79,99 €).
+Plateforme web regroupant les **sujets d'examen corrigés** de l'université, avec abonnement **annuel** (1,7€).
 
 ## Fonctionnalités
 
