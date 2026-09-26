@@ -2,12 +2,13 @@
 
 import { useFormState } from "react-dom";
 import { createSubjectAction } from "@/app/actions/admin";
+import { STUDY_LEVELS } from "@/lib/taxonomy";
 
 interface Props {
-  universities: { id: string; name: string }[];
+  departments: string[];
 }
 
-export function AdminSubjectForm({ universities }: Props) {
+export function AdminSubjectForm({ departments }: Props) {
   const [state, formAction] = useFormState(
     async (_: { error?: string } | undefined, formData: FormData) =>
       createSubjectAction(formData),
@@ -30,12 +31,23 @@ export function AdminSubjectForm({ universities }: Props) {
           <textarea name="description" rows={2} className="input" />
         </div>
         <div>
-          <label className="label">Université</label>
-          <select name="universityId" required className="input">
-            {universities.map((u) => (
-              <option key={u.id} value={u.id}>{u.name}</option>
+          <label className="label">Énoncé et corrigé</label>
+          <textarea name="content" rows={6} className="input" placeholder="Texte du sujet et de la correction" />
+        </div>
+        <div>
+          <label className="label">Faculté ou institut</label>
+          <input
+            name="department"
+            required
+            list="departments"
+            placeholder="Faculté des sciences"
+            className="input"
+          />
+          <datalist id="departments">
+            {departments.map((d) => (
+              <option key={d} value={d} />
             ))}
-          </select>
+          </datalist>
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
@@ -44,7 +56,11 @@ export function AdminSubjectForm({ universities }: Props) {
           </div>
           <div>
             <label className="label">Niveau</label>
-            <input name="level" required placeholder="1, 2, 3..." className="input" />
+            <select name="level" required className="input" defaultValue="L1">
+              {STUDY_LEVELS.map((level) => (
+                <option key={level} value={level}>{level}</option>
+              ))}
+            </select>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-4">
@@ -63,7 +79,7 @@ export function AdminSubjectForm({ universities }: Props) {
         </div>
         <label className="flex items-center gap-2 text-sm">
           <input name="isPremium" type="checkbox" defaultChecked className="rounded" />
-          Contenu premium (réservé aux abonnés)
+          Hors des 3 premiers sujets du niveau (après « Voir plus »)
         </label>
         <button type="submit" className="btn-primary w-full">Publier</button>
       </form>

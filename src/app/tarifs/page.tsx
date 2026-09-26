@@ -1,10 +1,14 @@
 import Link from "next/link";
 import { Check } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
-import { PLANS } from "@/lib/stripe";
+import { OFFER, formatDzd, formatFcfa } from "@/lib/plans";
 import { SubscribeButton } from "@/components/SubscribeButton";
 
-export default async function PricingPage() {
+export default async function PricingPage({
+  searchParams,
+}: {
+  searchParams: { canceled?: string };
+}) {
   const user = await getCurrentUser();
   const hasSub =
     user?.subscription?.status === "ACTIVE" &&
@@ -14,15 +18,21 @@ export default async function PricingPage() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
       <div className="text-center">
-        <h1 className="text-4xl font-bold text-slate-900">Tarifs</h1>
+        <h1 className="text-4xl font-bold text-slate-900">Voir plus de sujets</h1>
         <p className="mt-4 text-lg text-slate-600">
-          Accédez à tous les sujets corrigés. Sans engagement.
+          Un paiement unique de {formatDzd(OFFER.price)} donne accès à tous les sujets
+          et corrigés. CCP pour l&apos;Algérie, ou carte d&apos;une banque d&apos;Afrique subsaharienne.
         </p>
       </div>
 
+      {searchParams.canceled && (
+        <div className="mx-auto mt-8 max-w-2xl rounded-lg bg-amber-50 px-4 py-3 text-center text-sm text-amber-800">
+          Paiement annulé. Vous pouvez réessayer quand vous voulez.
+        </div>
+      )}
       {hasSub && (
         <div className="mx-auto mt-8 max-w-2xl rounded-lg bg-green-50 px-4 py-3 text-center text-sm text-green-800">
-          Vous avez déjà un abonnement actif. Gérez-le depuis{" "}
+          Vous avez déjà accès à tout le catalogue. Consultez{" "}
           <Link href="/compte" className="font-semibold underline">
             votre compte
           </Link>
@@ -30,37 +40,33 @@ export default async function PricingPage() {
         </div>
       )}
 
-      <div className="mt-14 grid gap-8 lg:grid-cols-2 lg:mx-auto lg:max-w-4xl">
-        {(Object.entries(PLANS) as [keyof typeof PLANS, typeof PLANS[keyof typeof PLANS]][]).map(
-          ([key, plan]) => (
-            <div
-              key={key}
-              className={`card relative ${key === "yearly" ? "border-brand-500 ring-2 ring-brand-500" : ""}`}
-            >
-              {"savings" in plan && plan.savings && (
-                <span className="absolute -top-3 right-4 rounded-full bg-brand-600 px-3 py-1 text-xs font-semibold text-white">
-                  Économisez {plan.savings}
-                </span>
-              )}
-              <h2 className="text-xl font-bold">{plan.name}</h2>
-              <p className="mt-4">
-                <span className="text-5xl font-bold">{plan.price.toFixed(2).replace(".", ",")} €</span>
-                <span className="text-slate-500">/{plan.interval}</span>
+      <div className="mx-auto mt-14 max-w-md">
+        <div className="card relative border-brand-500 ring-2 ring-brand-500">
+          <h2 className="text-xl font-bold">{OFFER.name}</h2>
+          <p className="mt-1 text-sm text-slate-500">Paiement unique</p>
+          <p className="mt-4">
+            <span className="text-5xl font-bold">{formatDzd(OFFER.price)}</span>
+          </p>
+          <ul className="mt-8 space-y-3">
+            {OFFER.features.map((f) => (
+              <li key={f} className="flex items-start gap-2 text-sm text-slate-600">
+                <Check className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" />
+                {f}
+              </li>
+            ))}
+          </ul>
+          {!hasSub && (
+            <div className="mt-8 space-y-3">
+              <SubscribeButton rail="ccp" loggedIn={!!user} className="btn-primary w-full" />
+              <SubscribeButton rail="card" loggedIn={!!user} className="btn-secondary w-full" />
+              <p className="text-center text-xs text-slate-500">
+                CCP via EDAHABIA, Algérie Poste ({formatDzd(OFFER.price)}). Carte Visa ou
+                Mastercard d&apos;une banque d&apos;Afrique subsaharienne ({formatFcfa(OFFER.cardAmount)}),
+                hors Algérie.
               </p>
-              <ul className="mt-8 space-y-3">
-                {plan.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-sm text-slate-600">
-                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              {!hasSub && (
-                <SubscribeButton planId={key} loggedIn={!!user} className="btn-primary mt-8 w-full" />
-              )}
             </div>
-          )
-        )}
+          )}
+        </div>
       </div>
 
       <div className="mx-auto mt-16 max-w-2xl">
@@ -68,16 +74,16 @@ export default async function PricingPage() {
         <dl className="mt-8 space-y-6">
           {[
             {
-              q: "Puis-je annuler à tout moment ?",
-              a: "Oui, vous pouvez résilier votre abonnement depuis votre espace client. L'accès reste actif jusqu'à la fin de la période payée.",
+              q: "Quels moyens de paiement acceptez-vous ?",
+              a: "CCP (EDAHABIA, Algérie Poste) pour l'Algérie, à 500 DA. Carte Visa ou Mastercard émise par une banque d'Afrique subsaharienne, en francs CFA. Les cartes des banques algériennes ne passent pas par ce bouton.",
             },
             {
               q: "Les sujets sont-ils mis à jour ?",
-              a: "Nous ajoutons de nouveaux sujets corrigés chaque semaine, couvrant les principales universités françaises.",
+              a: "Nous ajoutons de nouveaux sujets corrigés chaque semaine, classés par faculté, filière et niveau.",
             },
             {
               q: "Puis-je télécharger les PDF ?",
-              a: "Oui, tous les abonnés peuvent télécharger les sujets au format PDF pour réviser hors ligne.",
+              a: "Oui, après le paiement unique vous pouvez télécharger les sujets au format PDF pour réviser hors ligne.",
             },
           ].map(({ q, a }) => (
             <div key={q} className="card">

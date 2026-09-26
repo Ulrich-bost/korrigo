@@ -9,9 +9,10 @@ import { slugify } from "@/lib/utils";
 const subjectSchema = z.object({
   title: z.string().min(3),
   description: z.string().optional(),
-  universityId: z.string(),
+  content: z.string().optional(),
+  department: z.string().min(2),
   faculty: z.string().min(2),
-  level: z.string().min(1),
+  level: z.enum(["L1", "L2", "L3"]),
   year: z.coerce.number().int().min(2000).max(2030),
   semester: z.string().optional(),
   examType: z.string().min(2),
@@ -28,7 +29,8 @@ export async function createSubjectAction(formData: FormData) {
   const parsed = subjectSchema.safeParse({
     title: formData.get("title"),
     description: formData.get("description") || undefined,
-    universityId: formData.get("universityId"),
+    content: formData.get("content") || undefined,
+    department: formData.get("department"),
     faculty: formData.get("faculty"),
     level: formData.get("level"),
     year: formData.get("year"),
@@ -46,28 +48,16 @@ export async function createSubjectAction(formData: FormData) {
   const existing = await prisma.subject.findUnique({ where: { slug } });
   if (existing) slug = `${slug}-${Date.now()}`;
 
+  let university = await prisma.university.findFirst();
+  if (!university) {
+    university = await prisma.university.create({
+      data: { name: "Général", slug: "general" },
+    });
+  }
+
   await prisma.subject.create({
-    data: { ...data, slug, isPremium: data.isPremium ?? true },
+    data: { ...data, slug, universityId: university.id, isPremium: data.isPremium ?? true },
   });
 
   redirect("/admin?created=1");
-}
-
-export async function createUniversityAction(formData: FormData) {
-  try {
-    await requireAdmin();
-  } catch {
-    return { error: "Accès refusé" };
-  }
-
-  const name = formData.get("name")?.toString().trim();
-  const city = formData.get("city")?.toString().trim();
-  if (!name) return { error: "Nom requis" };
-
-  const slug = slugify(name);
-  await prisma.university.create({
-    data: { name, slug, city: city || null },
-  });
-
-  redirect("/admin?uni=1");
 }

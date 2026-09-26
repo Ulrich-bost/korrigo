@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 enum Role {
@@ -24,6 +25,12 @@ enum SubscriptionStatus {
   PAST_DUE
 }
 
+enum PaymentStatus {
+  PENDING
+  SUCCESSFUL
+  FAILED
+}
+
 model User {
   id               String         @id @default(cuid())
   email            String         @unique
@@ -34,19 +41,36 @@ model User {
   updatedAt        DateTime       @updatedAt
   subscription     Subscription?
   favorites        Favorite[]
+  payments         Payment[]
 }
 
 model Subscription {
-  id                   String             @id @default(cuid())
-  userId               String             @unique
-  user                 User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  plan                 SubscriptionPlan
-  status               SubscriptionStatus @default(ACTIVE)
-  stripeCustomerId     String?            @unique
-  stripeSubscriptionId String?            @unique
-  currentPeriodEnd     DateTime?
-  createdAt            DateTime           @default(now())
-  updatedAt            DateTime           @updatedAt
+  id                String             @id @default(cuid())
+  userId            String             @unique
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan              SubscriptionPlan
+  status            SubscriptionStatus @default(ACTIVE)
+  provider          String             @default("chargily")
+  providerReference String?
+  currentPeriodEnd  DateTime?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+}
+
+model Payment {
+  id              String           @id @default(cuid())
+  userId          String
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan            SubscriptionPlan
+  amount          Int
+  currency        String           @default("DZD")
+  status          PaymentStatus    @default(PENDING)
+  checkoutId      String?          @unique @map("campayReference")
+  operator        String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@index([userId, status])
 }
 
 model University {
@@ -63,8 +87,10 @@ model Subject {
   title        String
   slug         String     @unique
   description  String?
+  content      String?
   universityId String
   university   University @relation(fields: [universityId], references: [id], onDelete: Cascade)
+  department   String     @default("Sciences")
   faculty      String
   level        String
   year         Int
@@ -80,7 +106,9 @@ model Subject {
   favorites    Favorite[]
 
   @@index([universityId])
+  @@index([department])
   @@index([faculty])
+  @@index([level])
   @@index([year])
 }
 

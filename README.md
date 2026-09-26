@@ -1,28 +1,27 @@
 # UnivSujets
 
-Plateforme web regroupant les **sujets d'examen corrigés** de l'université, avec abonnement **annuel** (1,7€).
+Plateforme web de **sujets d'examen corrigés**, classés par **département**, **filière** et **niveau** (L1, L2, L3, M1, M2). Après inscription, l'étudiant choisit son département et sa filière, puis consulte 3 sujets corrigés par niveau.
 
 ## Fonctionnalités
 
-- Catalogue de sujets filtrable (université, filière, année)
-- Contenu premium réservé aux abonnés
-- Inscription / connexion par email
-- Paiement par carte via **Stripe** (Checkout + portail client)
-- Espace admin pour ajouter universités et sujets
-- Données de démo pré-chargées
+- Parcours : département → filière → niveau
+- 3 sujets corrigés par filière et par niveau
+- L'accès complet n'est proposé qu'après un clic sur « Voir plus »
+- Paiement unique : **CCP** (EDAHABIA, Algérie) ou **carte** Visa/Mastercard d'une banque d'Afrique subsaharienne
+- Espace admin pour ajouter des sujets par département
 
 ## Stack
 
 - **Next.js 14** (App Router) + TypeScript
 - **Tailwind CSS**
-- **Prisma** + SQLite
-- **Stripe** pour les abonnements
+- **Prisma** + PostgreSQL
+- **Chargily Pay** pour le CCP (Algérie) et **CinetPay** pour les cartes d'Afrique subsaharienne
 - Sessions JWT (cookies httpOnly)
 
 ## Démarrage rapide
 
 ```bash
-cd ~/projets/univ-sujets
+cd ~/projets/Korrigo
 cp .env.example .env
 npm install
 npm run db:push
@@ -39,16 +38,20 @@ Ouvrir [http://localhost:3000](http://localhost:3000)
 | Admin | admin@univ-sujets.fr | admin123 |
 | Abonné | demo@univ-sujets.fr | demo1234 |
 
-## Configuration Stripe
+## Configuration Chargily
 
-1. Créer un compte sur [stripe.com](https://stripe.com)
-2. Copier les clés API test dans `.env`
-3. Créer deux produits récurrents :
-   - **Mensuel** : 9,99 €/mois → copier l'ID `price_...` dans `STRIPE_PRICE_MONTHLY`
-   - **Annuel** : 79,99 €/an → copier l'ID dans `STRIPE_PRICE_YEARLY`
-4. Configurer le webhook : `POST /api/webhooks/stripe`
-   - Événements : `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`
-   - En local : `stripe listen --forward-to localhost:3000/api/webhooks/stripe`
+1. Créer un compte sur [Chargily Pay](https://pay.chargily.com)
+2. Copier la clé secrète dans `.env` (`CHARGILY_SECRET_KEY`)
+3. `CHARGILY_MODE=test` pour le bac à sable, `live` en production
+4. Le webhook est envoyé à `POST /api/webhooks/chargily` (aussi déclaré à chaque paiement)
+
+## Configuration CinetPay
+
+1. Créer un compte sur [CinetPay](https://cinetpay.com) dans un pays d'Afrique subsaharienne (devise XAF ou XOF)
+2. Copier `CINETPAY_API_KEY` et `CINETPAY_SITE_ID` dans `.env`
+3. `CINETPAY_CURRENCY` doit être la devise du compte (`XAF` ou `XOF`)
+4. Notification : `POST /api/webhooks/cinetpay`
+5. Le bouton carte n'ouvre que l'univers carte bancaire, pas le CCP ni les cartes CIB algériennes
 
 ## Structure
 
@@ -56,12 +59,12 @@ Ouvrir [http://localhost:3000](http://localhost:3000)
 src/
 ├── app/
 │   ├── sujets/          # Catalogue + détail
-│   ├── tarifs/          # Plans d'abonnement
+│   ├── tarifs/          # Paiement unique
 │   ├── compte/          # Espace utilisateur
 │   ├── admin/           # Back-office
-│   └── api/webhooks/    # Webhooks Stripe
+│   └── api/webhooks/    # Webhooks Chargily et CinetPay
 ├── components/
-└── lib/                 # Auth, Prisma, Stripe
+└── lib/                 # Auth, Prisma, Chargily, CinetPay
 prisma/
 ├── schema.prisma
 └── seed.ts
@@ -69,10 +72,11 @@ prisma/
 
 ## Production
 
-- Remplacer SQLite par PostgreSQL (`DATABASE_URL`)
+- PostgreSQL (`DATABASE_URL`)
 - Générer un `AUTH_SECRET` fort
-- Passer Stripe en mode live
-- Héberger sur Vercel, Railway, ou VPS
+- `CHARGILY_MODE=live` avec la clé secrète live
+- Clés CinetPay live et `CINETPAY_CURRENCY` alignée sur le compte
+- Héberger sur Vercel
 
 ## Licence
 

@@ -2,75 +2,100 @@
 
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import { getStripe, PLANS, type PlanId } from "@/lib/stripe";
+import { prisma } from "@/lib/prisma";
+import { createCheckout, isChargilyConfigured } from "@/lib/chargily";
+import { createCardPayment, isCinetpayConfigured } from "@/lib/cinetpay";
+import { fulfillChargilyPayment, fulfillCinetpayPayment } from "@/lib/fulfill-payment";
+import { OFFER, type PayRail } from "@/lib/plans";
 
-export async function createCheckoutSession(planId: PlanId) {
+function isRedirect(error: unknown) {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "digest" in error &&
+    String((error as { digest?: string }).digest).startsWith("NEXT_REDIRECT")
+  );
+}
+
+export async function createCheckoutSession(rail: PayRail) {
   const user = await getCurrentUser();
   if (!user) redirect("/connexion?redirect=/tarifs");
 
-  const plan = PLANS[planId];
-  const priceId = plan.priceId();
+  if (rail === "ccp" && !isChargilyConfigured()) {
+    return { error: "Le CCP n'est pas encore configuré. Ajoutez CHARGILY_SECRET_KEY." };
+  }
+  if (rail === "card" && !isCinetpayConfigured()) {
+    return { error: "Le paiement par carte n'est pas encore configuré. Ajoutez CINETPAY_API_KEY et CINETPAY_SITE_ID." };
+  }
 
-  if (!priceId || priceId.startsWith("price_...")) {
+  const isCard = rail === "card";
+  const payment = await prisma.payment.create({
+    data: {
+      userId: user.id,
+      plan: "YEARLY",
+      amount: isCard ? OFFER.cardAmount : OFFER.price,
+      currency: isCard ? OFFER.cardCurrency : OFFER.currency,
+      status: "PENDING",
+      operator: isCard ? "card" : "edahabia",
+    },
+  });
+
+  try {
+    if (isCard) {
+      const transactionId = `${Date.now()}${payment.id.replace(/\W/g, "").slice(-6)}`;
+      const card = await createCardPayment({
+        transactionId,
+        amount: OFFER.cardAmount,
+        paymentId: payment.id,
+        description: "KORRIGO acces complet",
+        name: user.name,
+        email: user.email,
+      });
+      await prisma.payment.update({
+        where: { id: payment.id },
+        data: { checkoutId: transactionId },
+      });
+      redirect(card.url);
+    }
+
+    const checkout = await createCheckout({
+      amount: OFFER.price,
+      method: "edahabia",
+      paymentId: payment.id,
+      description: "KORRIGO — accès complet, paiement unique",
+    });
+    await prisma.payment.update({
+      where: { id: payment.id },
+      data: { checkoutId: checkout.id },
+    });
+    redirect(checkout.url);
+  } catch (error) {
+    if (isRedirect(error)) throw error;
+    await prisma.payment.update({
+      where: { id: payment.id },
+      data: { status: "FAILED" },
+    });
     return {
-      error:
-        "Stripe n'est pas configuré. Ajoutez vos clés API dans le fichier .env",
+      error: error instanceof Error ? error.message : "Impossible de lancer le paiement",
     };
   }
-
-  const stripe = getStripe();
-  let customerId = user.subscription?.stripeCustomerId;
-
-  if (!customerId) {
-    const customer = await stripe.customers.create({
-      email: user.email,
-      name: user.name,
-      metadata: { userId: user.id },
-    });
-    customerId = customer.id;
-
-    await import("@/lib/prisma").then(({ prisma }) =>
-      prisma.subscription.upsert({
-        where: { userId: user.id },
-        create: {
-          userId: user.id,
-          plan: planId === "monthly" ? "MONTHLY" : "YEARLY",
-          status: "EXPIRED",
-          stripeCustomerId: customerId,
-        },
-        update: { stripeCustomerId: customerId },
-      })
-    );
-  }
-
-  const session = await stripe.checkout.sessions.create({
-    customer: customerId,
-    mode: "subscription",
-    payment_method_types: ["card"],
-    line_items: [{ price: priceId, quantity: 1 }],
-    success_url: `${process.env.NEXT_PUBLIC_APP_URL}/compte?success=1`,
-    cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/tarifs?canceled=1`,
-    metadata: { userId: user.id, plan: planId },
-  });
-
-  if (!session.url) {
-    return { error: "Impossible de créer la session de paiement" };
-  }
-
-  redirect(session.url);
 }
 
-export async function createPortalSession() {
+export async function syncLatestPayment() {
   const user = await getCurrentUser();
-  if (!user?.subscription?.stripeCustomerId) {
-    return { error: "Aucun abonnement Stripe associé" };
-  }
+  if (!user) return { ok: false };
 
-  const stripe = getStripe();
-  const session = await stripe.billingPortal.sessions.create({
-    customer: user.subscription.stripeCustomerId,
-    return_url: `${process.env.NEXT_PUBLIC_APP_URL}/compte`,
+  const pending = await prisma.payment.findFirst({
+    where: { userId: user.id, status: "PENDING" },
+    orderBy: { createdAt: "desc" },
   });
 
-  redirect(session.url);
+  if (!pending?.checkoutId) return { ok: true };
+
+  if (pending.operator === "card") {
+    await fulfillCinetpayPayment({ paymentId: pending.id, transactionId: pending.checkoutId });
+  } else {
+    await fulfillChargilyPayment({ paymentId: pending.id, checkoutId: pending.checkoutId });
+  }
+  return { ok: true };
 }

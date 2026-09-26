@@ -1,19 +1,24 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { CreditCard, User, CheckCircle, XCircle } from "lucide-react";
+import { CreditCard, User, CheckCircle } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { formatDate } from "@/lib/utils";
 import { logoutAction } from "@/app/actions/auth";
-import { ManageSubscriptionButton } from "@/components/ManageSubscriptionButton";
+import { syncLatestPayment } from "@/app/actions/subscription";
 
 export default async function AccountPage({
   searchParams,
 }: {
-  searchParams: { success?: string };
+  searchParams: { success?: string; canceled?: string };
 }) {
-  const user = await getCurrentUser();
-  if (!user) redirect("/connexion?redirect=/compte");
+  const sessionUser = await getCurrentUser();
+  if (!sessionUser) redirect("/connexion?redirect=/compte");
 
+  if (searchParams.success) {
+    await syncLatestPayment();
+  }
+
+  const user = (await getCurrentUser()) ?? sessionUser;
   const sub = user.subscription;
   const isActive =
     sub?.status === "ACTIVE" &&
@@ -26,7 +31,9 @@ export default async function AccountPage({
       {searchParams.success && (
         <div className="mt-6 flex items-center gap-2 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-800">
           <CheckCircle className="h-5 w-5" />
-          Paiement réussi ! Votre abonnement est maintenant actif.
+          {isActive
+            ? "Paiement confirmé. Votre accès complet est actif."
+            : "Paiement en cours de confirmation. Actualisez dans quelques secondes si besoin."}
         </div>
       )}
 
@@ -46,32 +53,28 @@ export default async function AccountPage({
         <section className="card">
           <div className="flex items-center gap-3">
             <CreditCard className="h-6 w-6 text-brand-600" />
-            <h2 className="text-lg font-semibold">Abonnement</h2>
+            <h2 className="text-lg font-semibold">{isActive ? "Accès" : "Mes sujets"}</h2>
           </div>
 
           {isActive ? (
             <div className="mt-4">
               <div className="flex items-center gap-2 text-green-700">
                 <CheckCircle className="h-5 w-5" />
-                <span className="font-medium">
-                  Actif — Plan {sub!.plan === "YEARLY" ? "annuel" : "mensuel"}
-                </span>
+                <span className="font-medium">Accès complet — paiement unique</span>
               </div>
-              {sub!.currentPeriodEnd && (
-                <p className="mt-2 text-sm text-slate-600">
-                  Renouvellement le {formatDate(sub!.currentPeriodEnd)}
-                </p>
-              )}
-              <ManageSubscriptionButton />
+              <p className="mt-2 text-sm text-slate-600">
+                {sub!.currentPeriodEnd
+                  ? `Accès jusqu'au ${formatDate(sub!.currentPeriodEnd)}`
+                  : "Sans date de fin et sans renouvellement."}
+              </p>
             </div>
           ) : (
             <div className="mt-4">
-              <div className="flex items-center gap-2 text-slate-600">
-                <XCircle className="h-5 w-5" />
-                <span>Aucun abonnement actif</span>
-              </div>
-              <Link href="/tarifs" className="btn-primary mt-4 inline-flex">
-                Choisir un abonnement
+              <p className="text-sm text-slate-600">
+                Choisissez une faculté et une filière pour consulter les sujets corrigés.
+              </p>
+              <Link href="/sujets" className="btn-secondary mt-4 inline-flex">
+                Choisir une faculté
               </Link>
             </div>
           )}

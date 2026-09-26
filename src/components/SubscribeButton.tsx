@@ -2,16 +2,21 @@
 
 import { useTransition } from "react";
 import { createCheckoutSession } from "@/app/actions/subscription";
-import type { PlanId } from "@/lib/stripe";
+import type { PayRail } from "@/lib/plans";
 import { cn } from "@/lib/utils";
 
 interface SubscribeButtonProps {
-  planId: PlanId;
+  rail: PayRail;
   loggedIn: boolean;
   className?: string;
 }
 
-export function SubscribeButton({ planId, loggedIn, className }: SubscribeButtonProps) {
+const LABELS: Record<PayRail, string> = {
+  ccp: "Payer par CCP",
+  card: "Payer par carte bancaire",
+};
+
+export function SubscribeButton({ rail, loggedIn, className }: SubscribeButtonProps) {
   const [pending, startTransition] = useTransition();
 
   return (
@@ -22,15 +27,15 @@ export function SubscribeButton({ planId, loggedIn, className }: SubscribeButton
       onClick={() =>
         startTransition(async () => {
           if (!loggedIn) {
-            window.location.href = `/connexion?redirect=/tarifs`;
+            window.location.href = "/connexion?redirect=/tarifs";
             return;
           }
-          const result = await createCheckoutSession(planId);
+          const result = await createCheckoutSession(rail);
           if (result?.error) alert(result.error);
         })
       }
     >
-      {pending ? "Redirection..." : "S'abonner"}
+      {pending ? "Redirection vers le paiement..." : LABELS[rail]}
     </button>
   );
 }

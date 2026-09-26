@@ -6,19 +6,29 @@
   html {
     scroll-behavior: smooth;
   }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading;
+  }
 }
 
 @layer components {
+  /* Bouton principal — vert du drapeau */
   .btn-primary {
-    @apply inline-flex items-center justify-center rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600;
+    @apply inline-flex items-center justify-center rounded-lg bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700;
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50;
+    @apply inline-flex items-center justify-center rounded-lg border border-brand-700 bg-white px-5 py-2.5 text-sm font-semibold text-brand-800 shadow-sm transition hover:bg-brand-50;
+  }
+
+  /* Accent — rouge du croissant */
+  .btn-ai {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-lg bg-ai-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-ai-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ai-500;
   }
 
   .card {
-    @apply rounded-xl border border-slate-200 bg-white p-6 shadow-sm;
+    @apply rounded-card border border-slate-200 bg-white p-6 shadow-sm;
   }
 
   .input {
@@ -27,5 +37,18 @@
 
   .label {
     @apply mb-1.5 block text-sm font-medium text-slate-700;
+  }
+
+  /* Badges de statut */
+  .badge-free {
+    @apply inline-flex items-center rounded-full bg-success-100 px-2.5 py-0.5 text-xs font-medium text-success-700;
+  }
+
+  .badge-premium {
+    @apply inline-flex items-center rounded-full bg-gold-100 px-2.5 py-0.5 text-xs font-medium text-gold-600;
+  }
+
+  .badge-ai {
+    @apply inline-flex items-center rounded-full bg-ai-100 px-2.5 py-0.5 text-xs font-medium text-ai-700;
   }
 }

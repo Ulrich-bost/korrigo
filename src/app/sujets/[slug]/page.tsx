@@ -1,35 +1,53 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Download, Lock, ArrowLeft, Calendar, Building2 } from "lucide-react";
+import { ArrowLeft, Calendar, Building2 } from "lucide-react";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser, hasActiveSubscription } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
+import { canAccessSubject } from "@/lib/access";
+import { departmentSlug, filiereSlug, formatLevel } from "@/lib/taxonomy";
 import { formatDate } from "@/lib/utils";
+import { SubjectCorrection } from "@/components/SubjectCorrection";
+import { Paywall } from "@/components/Paywall";
+import { rethrowNavigationError } from "@/lib/navigation-error";
 
 export default async function SubjectDetailPage({
   params,
 }: {
   params: { slug: string };
 }) {
-  const subject = await prisma.subject.findUnique({
-    where: { slug: params.slug },
-    include: { university: true },
-  });
+  let subject;
+  try {
+    subject = await prisma.subject.findUnique({
+      where: { slug: params.slug },
+    });
+  } catch (error) {
+    rethrowNavigationError(error);
+    return (
+      <div className="mx-auto max-w-4xl px-4 py-12 text-center text-slate-500">
+        Ce sujet est momentanément indisponible. Réessayez dans quelques minutes.
+      </div>
+    );
+  }
 
   if (!subject) notFound();
 
-  await prisma.subject.update({
-    where: { id: subject.id },
-    data: { views: { increment: 1 } },
-  });
+  try {
+    await prisma.subject.update({
+      where: { id: subject.id },
+      data: { views: { increment: 1 } },
+    });
+  } catch (error) {
+    rethrowNavigationError(error);
+  }
 
   const user = await getCurrentUser();
-  const isSubscribed = user ? await hasActiveSubscription(user.id) : false;
-  const canAccess = !subject.isPremium || isSubscribed;
+  const canAccess = await canAccessSubject(subject, user?.id ?? null);
+  const backHref = `/sujets?departement=${departmentSlug(subject.department)}&filiere=${filiereSlug(subject.faculty)}&niveau=${subject.level}`;
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
       <Link
-        href="/sujets"
+        href={backHref}
         className="inline-flex items-center gap-1 text-sm text-slate-600 hover:text-brand-600"
       >
         <ArrowLeft className="h-4 w-4" /> Retour au catalogue
@@ -38,7 +56,13 @@ export default async function SubjectDetailPage({
       <article className="mt-6 card">
         <div className="flex flex-wrap items-center gap-2">
           <span className="rounded-full bg-brand-100 px-3 py-1 text-sm font-medium text-brand-700">
-            {subject.university.name}
+            {subject.department}
+          </span>
+          <span className="rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-600">
+            {subject.faculty}
+          </span>
+          <span className="rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-600">
+            {formatLevel(subject.level)}
           </span>
           <span className="rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-600">
             {subject.examType}
@@ -49,7 +73,7 @@ export default async function SubjectDetailPage({
 
         <div className="mt-4 flex flex-wrap gap-4 text-sm text-slate-500">
           <span className="flex items-center gap-1">
-            <Building2 className="h-4 w-4" /> {subject.faculty} — L{subject.level}
+            <Building2 className="h-4 w-4" /> {subject.department}
           </span>
           <span className="flex items-center gap-1">
             <Calendar className="h-4 w-4" /> Session {subject.year}
@@ -63,45 +87,30 @@ export default async function SubjectDetailPage({
 
         <div className="mt-8 rounded-xl border border-slate-200 bg-slate-50 p-6">
           {canAccess ? (
-            <div>
-              <h2 className="font-semibold text-slate-900">Contenu du sujet</h2>
-              <div className="mt-4 rounded-lg bg-white p-6 text-sm leading-relaxed text-slate-700 shadow-inner">
-                <p className="font-medium">Exercice 1 — Analyse (8 points)</p>
-                <p className="mt-2">
-                  Étudier la convergence de la série ∑ (1/n²) et déterminer sa somme...
-                </p>
-                <p className="mt-4 font-medium text-brand-700">Correction :</p>
-                <p className="mt-2">
-                  Il s&apos;agit d&apos;une série de Riemann avec p = 2 &gt; 1, donc convergente.
-                  Sa somme vaut π²/6 (Basel).
-                </p>
-                <p className="mt-6 font-medium">Exercice 2 — Algèbre linéaire (12 points)</p>
-                <p className="mt-2">
-                  Soit A une matrice 3×3. Déterminer les valeurs propres et diagonaliser A...
-                </p>
-                <p className="mt-4 font-medium text-brand-700">Correction :</p>
-                <p className="mt-2">
-                  χ_A(λ) = det(A - λI) = ... Les valeurs propres sont λ₁ = 1, λ₂ = 2, λ₃ = -1.
-                </p>
+            <SubjectCorrection content={subject.content} fileUrl={subject.fileUrl} />
+          ) : !user ? (
+            <div className="text-center">
+              <h2 className="text-xl font-semibold">Créez un compte pour continuer</h2>
+              <p className="mt-2 text-slate-600">
+                Choisissez ensuite votre faculté et votre filière pour consulter les corrigés.
+              </p>
+              <div className="mt-6 flex flex-wrap justify-center gap-3">
+                <Link
+                  href={`/inscription?redirect=${encodeURIComponent(`/sujets/${subject.slug}`)}`}
+                  className="btn-primary"
+                >
+                  Créer un compte
+                </Link>
+                <Link
+                  href={`/connexion?redirect=${encodeURIComponent(`/sujets/${subject.slug}`)}`}
+                  className="btn-secondary"
+                >
+                  Se connecter
+                </Link>
               </div>
-              {subject.fileUrl && (
-                <a href={subject.fileUrl} className="btn-primary mt-4 inline-flex gap-2">
-                  <Download className="h-4 w-4" />
-                  Télécharger le PDF
-                </a>
-              )}
             </div>
           ) : (
-            <div className="text-center">
-              <Lock className="mx-auto h-12 w-12 text-amber-500" />
-              <h2 className="mt-4 text-xl font-semibold">Contenu réservé aux abonnés</h2>
-              <p className="mt-2 text-slate-600">
-                Abonnez-vous pour accéder à la correction complète et télécharger le PDF.
-              </p>
-              <Link href="/tarifs" className="btn-primary mt-6 inline-flex">
-                Voir les tarifs — dès 9,99 €/mois
-              </Link>
-            </div>
+            <Paywall loggedIn />
           )}
         </div>
 

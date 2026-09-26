@@ -1,6 +1,7 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { prisma } from "./prisma";
+import { rethrowNavigationError } from "./navigation-error";
 import type { Role } from "@prisma/client";
 
 const COOKIE_NAME = "univ-sujets-session";
@@ -64,17 +65,27 @@ export async function getCurrentUser() {
   const session = await getSession();
   if (!session) return null;
 
-  return prisma.user.findUnique({
-    where: { id: session.id },
-    include: { subscription: true },
-  });
+  try {
+    return await prisma.user.findUnique({
+      where: { id: session.id },
+      include: { subscription: true },
+    });
+  } catch (error) {
+    rethrowNavigationError(error);
+    return null;
+  }
 }
 
 export async function hasActiveSubscription(userId: string): Promise<boolean> {
-  const sub = await prisma.subscription.findUnique({ where: { userId } });
-  if (!sub || sub.status !== "ACTIVE") return false;
-  if (sub.currentPeriodEnd && sub.currentPeriodEnd < new Date()) return false;
-  return true;
+  try {
+    const sub = await prisma.subscription.findUnique({ where: { userId } });
+    if (!sub || sub.status !== "ACTIVE") return false;
+    if (sub.currentPeriodEnd && sub.currentPeriodEnd < new Date()) return false;
+    return true;
+  } catch (error) {
+    rethrowNavigationError(error);
+    return false;
+  }
 }
 
 export async function requireAuth() {

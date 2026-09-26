@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { GraduationCap, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
+import { Logo } from "@/components/Logo";
 import type { SessionUser } from "@/lib/auth";
 
 interface NavbarProps {
@@ -8,22 +9,15 @@ interface NavbarProps {
 
 export function Navbar({ session }: NavbarProps) {
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/80 backdrop-blur-md">
+    <header className="sticky top-0 z-50 border-b-2 border-brand-700 bg-white/90 backdrop-blur-md">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-        <Link href="/" className="flex items-center gap-2 font-bold text-brand-700">
-          <GraduationCap className="h-8 w-8" />
-          <span className="text-xl">UnivSujets</span>
+        <Link href="/">
+          <Logo height={34} priority />
         </Link>
 
         <nav className="hidden items-center gap-8 md:flex">
           <Link href="/sujets" className="text-sm font-medium text-slate-600 hover:text-brand-600">
             Catalogue
-          </Link>
-          <Link href="/universites" className="text-sm font-medium text-slate-600 hover:text-brand-600">
-            Universités
-          </Link>
-          <Link href="/tarifs" className="text-sm font-medium text-slate-600 hover:text-brand-600">
-            Tarifs
           </Link>
         </nav>
 
@@ -59,8 +53,6 @@ export function Navbar({ session }: NavbarProps) {
           <div className="absolute right-0 mt-2 w-56 rounded-xl border border-slate-200 bg-white p-4 shadow-lg">
             <nav className="flex flex-col gap-3">
               <Link href="/sujets">Catalogue</Link>
-              <Link href="/universites">Universités</Link>
-              <Link href="/tarifs">Tarifs</Link>
               {session ? (
                 <Link href="/compte">Mon compte</Link>
               ) : (
