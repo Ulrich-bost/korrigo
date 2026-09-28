@@ -26,7 +26,7 @@ export const CATALOG = [
   },
   {
     name: "Faculté de médecine",
-    filieres: ["Médecine"],
+    filieres: ["Médecine", "Pharmacie", "Médecine dentaire"],
   },
   {
     name: "Institut des sciences vétérinaires",
