@@ -5,11 +5,18 @@ export const STUDY_LEVELS = ["L1", "L2", "L3"] as const;
 export const CATALOG = [
   {
     name: "Faculté des sciences",
-    filieres: ["Informatique", "Mathématiques", "Chimie analytique", "Chimie organique", "Physique"],
+    filieres: [
+      "Informatique",
+      "Mathématiques",
+      "Chimie analytique",
+      "Chimie organique",
+      "Physique",
+      "Tronc commun",
+    ],
   },
   {
     name: "Faculté des sciences de la nature et de la vie",
-    filieres: ["Biologie", "Biotechnologie", "Sciences alimentaires"],
+    filieres: ["Biologie", "Biotechnologie", "Sciences alimentaires", "Tronc commun"],
   },
   {
     name: "Faculté de technologie",
@@ -22,6 +29,7 @@ export const CATALOG = [
       "Énergies renouvelables",
       "Automatique et électrotechnique",
       "Tronc commun sciences et technologie (LMD)",
+      "Tronc commun sciences et technologie (ingénieur)",
     ],
   },
   {
