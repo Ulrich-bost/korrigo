@@ -22,10 +22,10 @@ export async function createCheckoutSession(rail: PayRail) {
   if (!user) redirect("/connexion?redirect=/tarifs");
 
   if (rail === "ccp" && !isChargilyConfigured()) {
-    return { error: "Le CCP n'est pas encore configuré. Ajoutez CHARGILY_SECRET_KEY." };
+    return { error: "ccp_unconfigured" };
   }
   if (rail === "card" && !isCinetpayConfigured()) {
-    return { error: "Le paiement par carte n'est pas encore configuré. Ajoutez CINETPAY_API_KEY et CINETPAY_SITE_ID." };
+    return { error: "card_unconfigured" };
   }
 
   const isCard = rail === "card";
@@ -76,7 +76,7 @@ export async function createCheckoutSession(rail: PayRail) {
       data: { status: "FAILED" },
     });
     return {
-      error: error instanceof Error ? error.message : "Impossible de lancer le paiement",
+      error: "payment",
     };
   }
 }

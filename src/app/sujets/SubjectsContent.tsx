@@ -14,6 +14,8 @@ import {
 } from "@/lib/taxonomy";
 import { SubjectCorrection } from "@/components/SubjectCorrection";
 import { rethrowNavigationError } from "@/lib/navigation-error";
+import { getI18n } from "@/i18n/get-i18n";
+import { localizeName } from "@/i18n/catalog-labels";
 
 interface SearchParams {
   departement?: string;
@@ -42,6 +44,8 @@ export default async function SubjectsPage({
     catalogueUnavailable = true;
   }
 
+  const { locale, dict } = getI18n();
+  const t = dict.catalog;
   const departments = CATALOG.map((item) => item.name);
   const selectedDepartment = findBySlug(departments, searchParams.departement);
   const structure = CATALOG.find((item) => item.name === selectedDepartment);
@@ -64,17 +68,17 @@ export default async function SubjectsPage({
   const visibleSubjects = subjectsForVisitor(levelSubjects, isSubscribed);
 
   const crumbs = [
-    { href: "/sujets", label: "Facultés et instituts" },
+    { href: "/sujets", label: t.crumbs },
     selectedDepartment
       ? {
           href: `/sujets?departement=${departmentSlug(selectedDepartment)}`,
-          label: selectedDepartment,
+          label: localizeName(selectedDepartment, locale),
         }
       : null,
     selectedDepartment && selectedFiliere
       ? {
           href: `/sujets?departement=${departmentSlug(selectedDepartment)}&filiere=${filiereSlug(selectedFiliere)}`,
-          label: selectedFiliere,
+          label: localizeName(selectedFiliere, locale),
         }
       : null,
     selectedLevel ? { href: "", label: selectedLevel } : null,
@@ -85,21 +89,21 @@ export default async function SubjectsPage({
       <div>
         <h1 className="text-3xl font-bold">
           {!selectedDepartment
-            ? "Choisissez une faculté ou un institut"
+            ? t.chooseFaculty
             : !selectedFiliere
-              ? "Choisissez une filière"
+              ? t.chooseFiliere
               : !selectedLevel
-                ? "Choisissez un niveau"
-                : `${selectedFiliere} · ${selectedLevel}`}
+                ? t.chooseLevel
+                : `${localizeName(selectedFiliere, locale)} · ${selectedLevel}`}
         </h1>
         <p className="mt-2 text-slate-600">
           {!selectedDepartment
-            ? "Université de Blida 1. Ensuite, vous choisirez votre filière."
+            ? t.blida
             : !selectedFiliere
-              ? `${selectedDepartment} — sélectionnez votre filière.`
+              ? t.selectFiliere(localizeName(selectedDepartment, locale))
               : !selectedLevel
-                ? "Ouvrez L1, L2 ou L3 pour consulter les sujets corrigés."
-                : "Sujets et corrigés de ce niveau."}
+                ? t.openLevels
+                : t.levelSubjects}
         </p>
       </div>
 
@@ -107,7 +111,7 @@ export default async function SubjectsPage({
         <nav className="mt-6 flex flex-wrap items-center gap-1 text-sm text-slate-500">
           {crumbs.map((crumb, index) => (
             <span key={crumb.label} className="flex items-center gap-1">
-              {index > 0 && <ChevronRight className="h-4 w-4" />}
+              {index > 0 && <ChevronRight className="h-4 w-4 rtl:rotate-180" />}
               {crumb.href && index < crumbs.length - 1 ? (
                 <Link href={crumb.href} className="hover:text-brand-600">
                   {crumb.label}
@@ -131,9 +135,9 @@ export default async function SubjectsPage({
                 className="card group transition hover:border-brand-300 hover:shadow-md"
               >
                 <FolderOpen className="h-8 w-8 text-brand-600" />
-                <h2 className="mt-3 font-semibold group-hover:text-brand-700">{department}</h2>
+                <h2 className="mt-3 font-semibold group-hover:text-brand-700">{localizeName(department, locale)}</h2>
                 <p className="mt-1 text-sm text-slate-500">
-                  {filiereCount} filière{filiereCount > 1 ? "s" : ""}
+                  {t.filiereCount(filiereCount)}
                 </p>
               </Link>
             );
@@ -150,7 +154,7 @@ export default async function SubjectsPage({
               className="card group transition hover:border-brand-300 hover:shadow-md"
             >
               <GraduationCap className="h-8 w-8 text-brand-600" />
-              <h2 className="mt-3 font-semibold group-hover:text-brand-700">{filiere}</h2>
+              <h2 className="mt-3 font-semibold group-hover:text-brand-700">{localizeName(filiere, locale)}</h2>
               <p className="mt-1 text-sm text-slate-500">L1 · L2 · L3</p>
             </Link>
           ))}
@@ -166,7 +170,7 @@ export default async function SubjectsPage({
               className="card group text-center transition hover:border-brand-300 hover:shadow-md"
             >
               <p className="text-2xl font-bold text-brand-700">{level}</p>
-              <p className="mt-2 text-sm text-slate-500">Sujets corrigés</p>
+              <p className="mt-2 text-sm text-slate-500">{t.corrected}</p>
             </Link>
           ))}
         </div>
@@ -174,22 +178,22 @@ export default async function SubjectsPage({
 
       {selectedDepartment && selectedFiliere && selectedLevel && !user && (
         <div className="mx-auto mt-10 max-w-lg card text-center">
-          <h2 className="text-xl font-semibold">Créez un compte pour voir les corrigés</h2>
+          <h2 className="text-xl font-semibold">{t.createToSee}</h2>
           <p className="mt-2 text-sm text-slate-600">
-            Une fois inscrit, les sujets de {selectedFiliere} {selectedLevel} s&apos;affichent ici.
+            {t.afterSignup(localizeName(selectedFiliere, locale), selectedLevel)}
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             <Link
               href={`/inscription?redirect=${encodeURIComponent(`/sujets?departement=${departmentSlug(selectedDepartment)}&filiere=${filiereSlug(selectedFiliere)}&niveau=${selectedLevel}`)}`}
               className="btn-primary"
             >
-              Créer un compte
+              {t.createAccount}
             </Link>
             <Link
               href={`/connexion?redirect=${encodeURIComponent(`/sujets?departement=${departmentSlug(selectedDepartment)}&filiere=${filiereSlug(selectedFiliere)}&niveau=${selectedLevel}`)}`}
               className="btn-secondary"
             >
-              Se connecter
+              {t.login}
             </Link>
           </div>
         </div>
@@ -207,7 +211,7 @@ export default async function SubjectsPage({
                   {subject.examType}
                 </span>
                 <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-slate-600">
-                  Session {subject.year}
+                  {t.session(subject.year)}
                 </span>
               </div>
               <h2 className="mt-3 text-xl font-semibold">
@@ -225,13 +229,13 @@ export default async function SubjectsPage({
           ))}
 
           {visibleSubjects.length === 0 && (
-            <p className="text-center text-slate-500">Aucun sujet pour ce niveau.</p>
+            <p className="text-center text-slate-500">{t.emptyLevel}</p>
           )}
 
           {!isSubscribed && visibleSubjects.length > 0 && (
             <div className="text-center">
               <Link href="/tarifs" className="btn-primary inline-flex">
-                Voir plus
+                {t.seeMore}
               </Link>
             </div>
           )}
@@ -240,12 +244,12 @@ export default async function SubjectsPage({
 
       {catalogueUnavailable && (
         <div className="mt-12 text-center text-slate-500">
-          Le catalogue est momentanément indisponible. Réessayez dans quelques minutes.
+          {t.unavailable}
         </div>
       )}
 
       {!catalogueUnavailable && departments.length === 0 && (
-        <div className="mt-12 text-center text-slate-500">Aucun sujet pour le moment.</div>
+        <div className="mt-12 text-center text-slate-500">{t.empty}</div>
       )}
     </div>
   );

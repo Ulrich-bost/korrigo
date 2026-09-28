@@ -4,6 +4,8 @@ import { useTransition } from "react";
 import { createCheckoutSession } from "@/app/actions/subscription";
 import type { PayRail } from "@/lib/plans";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/components/I18nProvider";
+import type { Dict } from "@/i18n/messages";
 
 interface SubscribeButtonProps {
   rail: PayRail;
@@ -11,13 +13,14 @@ interface SubscribeButtonProps {
   className?: string;
 }
 
-const LABELS: Record<PayRail, string> = {
-  ccp: "Payer par CCP",
-  card: "Payer par carte bancaire",
-};
-
 export function SubscribeButton({ rail, loggedIn, className }: SubscribeButtonProps) {
+  const { dict } = useI18n();
   const [pending, startTransition] = useTransition();
+  const label = rail === "ccp" ? dict.pay.ccp : dict.pay.card;
+
+  function errorText(code: string) {
+    return code in dict.errors ? dict.errors[code as keyof Dict["errors"]] : dict.errors.payment;
+  }
 
   return (
     <button
@@ -31,11 +34,11 @@ export function SubscribeButton({ rail, loggedIn, className }: SubscribeButtonPr
             return;
           }
           const result = await createCheckoutSession(rail);
-          if (result?.error) alert(result.error);
+          if (result?.error) alert(errorText(result.error));
         })
       }
     >
-      {pending ? "Redirection vers le paiement..." : LABELS[rail]}
+      {pending ? dict.pay.pending : label}
     </button>
   );
 }

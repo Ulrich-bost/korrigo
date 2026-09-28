@@ -7,9 +7,10 @@ export function slugify(text: string): string {
     .replace(/(^-|-$)/g, "");
 }
 
-export function formatDate(date: Date | string | null | undefined): string {
+export function formatDate(date: Date | string | null | undefined, locale: "fr" | "en" | "ar" = "fr"): string {
   if (!date) return "—";
-  return new Intl.DateTimeFormat("fr-FR", {
+  const intl = locale === "ar" ? "ar-DZ" : locale === "en" ? "en-GB" : "fr-DZ";
+  return new Intl.DateTimeFormat(intl, {
     day: "numeric",
     month: "long",
     year: "numeric",

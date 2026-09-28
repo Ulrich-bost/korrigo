@@ -1,4 +1,5 @@
 import { Download } from "lucide-react";
+import { getI18n } from "@/i18n/get-i18n";
 
 const FALLBACK_CONTENT = `Exercice 1 — Analyse (8 points)
 
@@ -21,18 +22,19 @@ export function SubjectCorrection({
   content?: string | null;
   fileUrl?: string | null;
 }) {
+  const { dict } = getI18n();
   const text = (content && content.trim()) || FALLBACK_CONTENT;
 
   return (
     <div>
-      <h2 className="font-semibold text-slate-900">Sujet et corrigé</h2>
+      <h2 className="font-semibold text-slate-900">{dict.subject.heading}</h2>
       <div className="mt-4 whitespace-pre-wrap rounded-lg bg-white p-6 text-sm leading-relaxed text-slate-700 shadow-inner">
         {text}
       </div>
       {fileUrl && (
         <a href={fileUrl} className="btn-primary mt-4 inline-flex gap-2">
           <Download className="h-4 w-4" />
-          Télécharger le PDF
+          {dict.subject.download}
         </a>
       )}
     </div>

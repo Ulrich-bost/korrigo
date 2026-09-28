@@ -9,6 +9,8 @@ import { formatDate } from "@/lib/utils";
 import { SubjectCorrection } from "@/components/SubjectCorrection";
 import { Paywall } from "@/components/Paywall";
 import { rethrowNavigationError } from "@/lib/navigation-error";
+import { getI18n } from "@/i18n/get-i18n";
+import { localizeName } from "@/i18n/catalog-labels";
 
 export default async function SubjectDetailPage({
   params,
@@ -22,9 +24,10 @@ export default async function SubjectDetailPage({
     });
   } catch (error) {
     rethrowNavigationError(error);
+    const { dict } = getI18n();
     return (
       <div className="mx-auto max-w-4xl px-4 py-12 text-center text-slate-500">
-        Ce sujet est momentanément indisponible. Réessayez dans quelques minutes.
+        {dict.subject.unavailable}
       </div>
     );
   }
@@ -40,6 +43,8 @@ export default async function SubjectDetailPage({
     rethrowNavigationError(error);
   }
 
+  const { locale, dict } = getI18n();
+  const t = dict.subject;
   const user = await getCurrentUser();
   const canAccess = await canAccessSubject(subject, user?.id ?? null);
   const backHref = `/sujets?departement=${departmentSlug(subject.department)}&filiere=${filiereSlug(subject.faculty)}&niveau=${subject.level}`;
@@ -50,16 +55,16 @@ export default async function SubjectDetailPage({
         href={backHref}
         className="inline-flex items-center gap-1 text-sm text-slate-600 hover:text-brand-600"
       >
-        <ArrowLeft className="h-4 w-4" /> Retour au catalogue
+        <ArrowLeft className="h-4 w-4 rtl:rotate-180" /> {t.back}
       </Link>
 
       <article className="mt-6 card">
         <div className="flex flex-wrap items-center gap-2">
           <span className="rounded-full bg-brand-100 px-3 py-1 text-sm font-medium text-brand-700">
-            {subject.department}
+            {localizeName(subject.department, locale)}
           </span>
           <span className="rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-600">
-            {subject.faculty}
+            {localizeName(subject.faculty, locale)}
           </span>
           <span className="rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-600">
             {formatLevel(subject.level)}
@@ -73,10 +78,10 @@ export default async function SubjectDetailPage({
 
         <div className="mt-4 flex flex-wrap gap-4 text-sm text-slate-500">
           <span className="flex items-center gap-1">
-            <Building2 className="h-4 w-4" /> {subject.department}
+            <Building2 className="h-4 w-4" /> {localizeName(subject.department, locale)}
           </span>
           <span className="flex items-center gap-1">
-            <Calendar className="h-4 w-4" /> Session {subject.year}
+            <Calendar className="h-4 w-4" /> {dict.catalog.session(subject.year)}
             {subject.semester ? ` · ${subject.semester}` : ""}
           </span>
         </div>
@@ -90,22 +95,22 @@ export default async function SubjectDetailPage({
             <SubjectCorrection content={subject.content} fileUrl={subject.fileUrl} />
           ) : !user ? (
             <div className="text-center">
-              <h2 className="text-xl font-semibold">Créez un compte pour continuer</h2>
+              <h2 className="text-xl font-semibold">{t.createTitle}</h2>
               <p className="mt-2 text-slate-600">
-                Choisissez ensuite votre faculté et votre filière pour consulter les corrigés.
+                {t.createLead}
               </p>
               <div className="mt-6 flex flex-wrap justify-center gap-3">
                 <Link
                   href={`/inscription?redirect=${encodeURIComponent(`/sujets/${subject.slug}`)}`}
                   className="btn-primary"
                 >
-                  Créer un compte
+                  {t.createAccount}
                 </Link>
                 <Link
                   href={`/connexion?redirect=${encodeURIComponent(`/sujets/${subject.slug}`)}`}
                   className="btn-secondary"
                 >
-                  Se connecter
+                  {t.login}
                 </Link>
               </div>
             </div>
@@ -115,7 +120,7 @@ export default async function SubjectDetailPage({
         </div>
 
         <p className="mt-6 text-xs text-slate-400">
-          Ajouté le {formatDate(subject.createdAt)} · {subject.views} vues
+          {t.added(formatDate(subject.createdAt, locale), subject.views)}
         </p>
       </article>
     </div>

@@ -55,6 +55,7 @@ const config: Config = {
       fontFamily: {
         heading: ["var(--font-heading)", "Inter", "sans-serif"],
         body: ["var(--font-body)", "Inter", "sans-serif"],
+        arabic: ["var(--font-arabic)", "sans-serif"],
         code: ["var(--font-code)", "monospace"],
       },
       borderRadius: {

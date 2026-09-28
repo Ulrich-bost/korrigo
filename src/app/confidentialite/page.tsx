@@ -1,4 +1,4 @@
 import LegalPage from "@/components/LegalPage";
 export default function Page() {
-  return <LegalPage title="Politique de confidentialité" />;
+  return <LegalPage kind="privacy" />;
 }

@@ -7,8 +7,6 @@ import { prisma } from "@/lib/prisma";
 import { createSession } from "@/lib/auth";
 import { rethrowNavigationError } from "@/lib/navigation-error";
 
-const UNAVAILABLE = "Le service est momentanément indisponible. Réessayez dans quelques minutes.";
-
 function safeRedirect(value: FormDataEntryValue | null) {
   const raw = value?.toString() || "/sujets";
   if (!raw.startsWith("/") || raw.startsWith("//")) return "/";
@@ -16,9 +14,9 @@ function safeRedirect(value: FormDataEntryValue | null) {
 }
 
 const registerSchema = z.object({
-  name: z.string().min(2, "Nom requis (min. 2 caractères)"),
-  email: z.string().email("Email invalide"),
-  password: z.string().min(8, "Mot de passe : min. 8 caractères"),
+  name: z.string().min(2),
+  email: z.string().email(),
+  password: z.string().min(8),
 });
 
 export async function registerAction(formData: FormData) {
@@ -29,7 +27,11 @@ export async function registerAction(formData: FormData) {
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.errors[0]?.message ?? "Données invalides" };
+    const field = parsed.error.issues[0]?.path[0];
+    if (field === "name") return { error: "name" };
+    if (field === "email") return { error: "email" };
+    if (field === "password") return { error: "password" };
+    return { error: "invalid" };
   }
 
   const { name, email, password } = parsed.data;
@@ -37,7 +39,7 @@ export async function registerAction(formData: FormData) {
   try {
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
-      return { error: "Un compte existe déjà avec cet email" };
+      return { error: "exists" };
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
@@ -53,15 +55,15 @@ export async function registerAction(formData: FormData) {
     });
   } catch (error) {
     rethrowNavigationError(error);
-    return { error: UNAVAILABLE };
+    return { error: "unavailable" };
   }
 
   redirect(safeRedirect(formData.get("redirect")));
 }
 
 const loginSchema = z.object({
-  email: z.string().email("Email invalide"),
-  password: z.string().min(1, "Mot de passe requis"),
+  email: z.string().email(),
+  password: z.string().min(1),
 });
 
 export async function loginAction(formData: FormData) {
@@ -71,7 +73,10 @@ export async function loginAction(formData: FormData) {
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.errors[0]?.message ?? "Données invalides" };
+    const field = parsed.error.issues[0]?.path[0];
+    if (field === "email") return { error: "email" };
+    if (field === "password") return { error: "password_required" };
+    return { error: "invalid" };
   }
 
   const { email, password } = parsed.data;
@@ -80,7 +85,7 @@ export async function loginAction(formData: FormData) {
     const user = await prisma.user.findUnique({ where: { email } });
 
     if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
-      return { error: "Email ou mot de passe incorrect" };
+      return { error: "bad_login" };
     }
 
     await createSession({
@@ -91,7 +96,7 @@ export async function loginAction(formData: FormData) {
     });
   } catch (error) {
     rethrowNavigationError(error);
-    return { error: UNAVAILABLE };
+    return { error: "unavailable" };
   }
 
   redirect(safeRedirect(formData.get("redirect")));

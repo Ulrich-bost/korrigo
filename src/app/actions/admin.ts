@@ -23,7 +23,7 @@ export async function createSubjectAction(formData: FormData) {
   try {
     await requireAdmin();
   } catch {
-    return { error: "Accès refusé" };
+    return { error: "denied" };
   }
 
   const parsed = subjectSchema.safeParse({
@@ -40,7 +40,7 @@ export async function createSubjectAction(formData: FormData) {
   });
 
   if (!parsed.success) {
-    return { error: "Données invalides" };
+    return { error: "invalid" };
   }
 
   const data = parsed.data;
