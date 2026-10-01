@@ -163,6 +163,37 @@ export type Dict = {
     yes: string;
     no: string;
     namesStayFrench: string;
+    overview: string;
+    subjects: string;
+    accounts: string;
+    activeAccess: string;
+    paymentsOk: string;
+    paymentsPending: string;
+    paymentsFailed: string;
+    collected: string;
+    none: string;
+    recentAccounts: string;
+    recentPayments: string;
+    emptyAccounts: string;
+    emptyPayments: string;
+    colName: string;
+    colEmail: string;
+    colRole: string;
+    colJoined: string;
+    colAccess: string;
+    colAmount: string;
+    colStatus: string;
+    colMethod: string;
+    colDate: string;
+    roleAdmin: string;
+    roleUser: string;
+    accessActive: string;
+    accessNone: string;
+    statusPending: string;
+    statusSuccessful: string;
+    statusFailed: string;
+    methodCcp: string;
+    methodCard: string;
   };
 };
 
@@ -372,6 +403,37 @@ const fr: Dict = {
     yes: "Oui",
     no: "Non",
     namesStayFrench: "Les noms enregistrés restent ceux du catalogue en français.",
+    overview: "Vue d'ensemble",
+    subjects: "Sujets",
+    accounts: "Comptes",
+    activeAccess: "Accès actifs",
+    paymentsOk: "Paiements réussis",
+    paymentsPending: "Paiements en attente",
+    paymentsFailed: "Paiements échoués",
+    collected: "Encaissé",
+    none: "—",
+    recentAccounts: "Derniers comptes",
+    recentPayments: "Derniers paiements",
+    emptyAccounts: "Aucun compte pour le moment.",
+    emptyPayments: "Aucun paiement pour le moment.",
+    colName: "Nom",
+    colEmail: "Email",
+    colRole: "Rôle",
+    colJoined: "Inscription",
+    colAccess: "Accès",
+    colAmount: "Montant",
+    colStatus: "Statut",
+    colMethod: "Moyen",
+    colDate: "Date",
+    roleAdmin: "Admin",
+    roleUser: "Étudiant",
+    accessActive: "Actif",
+    accessNone: "Aucun",
+    statusPending: "En attente",
+    statusSuccessful: "Réussi",
+    statusFailed: "Échoué",
+    methodCcp: "CCP",
+    methodCard: "Carte",
   },
 };
 
@@ -580,6 +642,37 @@ const en: Dict = {
     yes: "Yes",
     no: "No",
     namesStayFrench: "Saved names stay in French so they match the catalogue.",
+    overview: "Overview",
+    subjects: "Papers",
+    accounts: "Accounts",
+    activeAccess: "Active access",
+    paymentsOk: "Successful payments",
+    paymentsPending: "Pending payments",
+    paymentsFailed: "Failed payments",
+    collected: "Collected",
+    none: "—",
+    recentAccounts: "Latest accounts",
+    recentPayments: "Latest payments",
+    emptyAccounts: "No accounts yet.",
+    emptyPayments: "No payments yet.",
+    colName: "Name",
+    colEmail: "Email",
+    colRole: "Role",
+    colJoined: "Signed up",
+    colAccess: "Access",
+    colAmount: "Amount",
+    colStatus: "Status",
+    colMethod: "Method",
+    colDate: "Date",
+    roleAdmin: "Admin",
+    roleUser: "Student",
+    accessActive: "Active",
+    accessNone: "None",
+    statusPending: "Pending",
+    statusSuccessful: "Successful",
+    statusFailed: "Failed",
+    methodCcp: "CCP",
+    methodCard: "Card",
   },
 };
 
@@ -780,6 +873,37 @@ const ar: Dict = {
     yes: "نعم",
     no: "لا",
     namesStayFrench: "الأسماء المحفوظة تبقى بالفرنسية لتطابق الفهرس.",
+    overview: "نظرة عامة",
+    subjects: "المواضيع",
+    accounts: "الحسابات",
+    activeAccess: "وصول مفعّل",
+    paymentsOk: "مدفوعات ناجحة",
+    paymentsPending: "مدفوعات قيد الانتظار",
+    paymentsFailed: "مدفوعات فاشلة",
+    collected: "المحصّل",
+    none: "—",
+    recentAccounts: "آخر الحسابات",
+    recentPayments: "آخر المدفوعات",
+    emptyAccounts: "لا توجد حسابات حاليا.",
+    emptyPayments: "لا توجد مدفوعات حاليا.",
+    colName: "الاسم",
+    colEmail: "البريد",
+    colRole: "الدور",
+    colJoined: "التسجيل",
+    colAccess: "الوصول",
+    colAmount: "المبلغ",
+    colStatus: "الحالة",
+    colMethod: "الوسيلة",
+    colDate: "التاريخ",
+    roleAdmin: "إدارة",
+    roleUser: "طالب",
+    accessActive: "مفعّل",
+    accessNone: "لا شيء",
+    statusPending: "قيد الانتظار",
+    statusSuccessful: "ناجح",
+    statusFailed: "فاشل",
+    methodCcp: "CCP",
+    methodCard: "بطاقة",
   },
 };
 
