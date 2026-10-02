@@ -16,6 +16,7 @@ const profileSchema = z.object({
 export async function updateProfileAction(formData: FormData) {
   const user = await requireAuth().catch(() => null);
   if (!user) redirect("/connexion?redirect=/compte");
+  if (user.role !== "student") redirect("/admin");
 
   const parsed = profileSchema.safeParse({
     programId: formData.get("programId"),
@@ -48,6 +49,7 @@ const scheduleSchema = z.object({
 export async function addExamDateAction(formData: FormData) {
   const user = await requireAuth().catch(() => null);
   if (!user) redirect("/connexion?redirect=/compte");
+  if (user.role !== "student") redirect("/admin");
 
   const parsed = scheduleSchema.safeParse({
     label: formData.get("label"),

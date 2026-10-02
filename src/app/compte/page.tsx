@@ -30,13 +30,16 @@ export default async function AccountPage({
     user.subscriptions.find((item) => item.programId === user.programId && item.status === "active") ??
     user.subscriptions.find((item) => item.status === "active");
   const isActive = !!sub && (!sub.currentPeriodEnd || sub.currentPeriodEnd > new Date());
-  const tree = await getAcademicTree();
+  const isStudent = user.role === "student";
+  const tree = isStudent ? await getAcademicTree() : [];
   const supabase = createSupabaseServerClient();
-  const { data: schedules } = await supabase
-    .from("student_exam_schedules")
-    .select("id, label, exam_on")
-    .eq("profile_id", user.id)
-    .order("exam_on");
+  const { data: schedules } = isStudent
+    ? await supabase
+        .from("student_exam_schedules")
+        .select("id, label, exam_on")
+        .eq("profile_id", user.id)
+        .order("exam_on")
+    : { data: [] };
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
@@ -62,6 +65,8 @@ export default async function AccountPage({
           </div>
         </section>
 
+        {isStudent ? (
+        <>
         <section className="card">
           <div className="flex items-center gap-3">
             <CreditCard className="h-6 w-6 text-brand-600" />
@@ -150,6 +155,13 @@ export default async function AccountPage({
             <button type="submit" className="btn-secondary sm:col-span-2">{t.addDate}</button>
           </form>
         </section>
+        </>
+        ) : (
+          <section className="card">
+            <p className="text-sm text-slate-600">{dict.admin.title}</p>
+            <Link href="/admin" className="btn-primary mt-4 inline-flex">{dict.nav.admin}</Link>
+          </section>
+        )}
 
         <form action={logoutAction}>
           <button

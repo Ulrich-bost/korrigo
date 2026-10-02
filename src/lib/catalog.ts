@@ -97,21 +97,17 @@ export const getAcademicTree = unstable_cache(
   { revalidate: 3600 }
 );
 
-export const getExamCatalog = unstable_cache(
-  async (): Promise<CatalogExam[]> => {
-    const supabase = createSupabasePublicClient();
-    const { data, error } = await supabase
-      .from("exams")
-      .select(
-        "id, title, slug, description, program_id, level, year, semester, exam_type, is_free, file_path, views, created_at, programs(name, departments(name))"
-      )
-      .order("title");
-    if (error) throw error;
-    return ((data ?? []) as ExamRow[]).map(mapExam);
-  },
-  ["exam-catalog"],
-  { revalidate: 3600 }
-);
+export async function getExamCatalog(): Promise<CatalogExam[]> {
+  const supabase = createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("exams")
+    .select(
+      "id, title, slug, description, program_id, level, year, semester, exam_type, is_free, file_path, views, created_at, programs(name, departments(name))"
+    )
+    .order("title");
+  if (error) throw error;
+  return ((data ?? []) as ExamRow[]).map(mapExam);
+}
 
 export async function getExamBySlug(slug: string) {
   const exams = await getExamCatalog();

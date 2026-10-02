@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { getAcademicTree, getExamCatalog } from "@/lib/catalog";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { AdminSubjectForm } from "@/components/AdminSubjectForm";
+import { STUDY_LEVELS } from "@/lib/taxonomy";
 import { getI18n } from "@/i18n/get-i18n";
 import { localizeName } from "@/i18n/catalog-labels";
 import { formatDate } from "@/lib/utils";
@@ -25,18 +26,21 @@ export default async function AdminPage({
   const [tree, exams, profileCount, subscriptionRows, paymentRows, accountRows] = await Promise.all([
     getAcademicTree(),
     getExamCatalog(),
-    isSuper
-      ? supabase.from("profiles").select("id", { count: "exact", head: true })
-      : Promise.resolve({ count: 0 }),
-    isSuper
-      ? supabase.from("subscriptions").select("status, current_period_end")
-      : Promise.resolve({ data: [] as { status: string; current_period_end: string | null }[] }),
-    isSuper
-      ? supabase.from("payments").select("status, amount, currency, operator, created_at, profiles(full_name, email)").order("created_at", { ascending: false })
-      : Promise.resolve({ data: [] as PaymentRow[] }),
-    isSuper
-      ? supabase.from("profiles").select("id, full_name, email, role, created_at, subscriptions(status, current_period_end)").order("created_at", { ascending: false }).limit(8)
-      : Promise.resolve({ data: [] as AccountRow[] }),
+    supabase
+      .from("profiles")
+      .select("id", { count: "exact", head: true })
+      .match(isSuper ? {} : { role: "student" }),
+    supabase.from("subscriptions").select("status, current_period_end"),
+    supabase
+      .from("payments")
+      .select("status, amount, currency, operator, created_at, profiles(full_name, email)")
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("profiles")
+      .select("id, full_name, email, role, created_at, subscriptions(status, current_period_end)")
+      .match(isSuper ? {} : { role: "student" })
+      .order("created_at", { ascending: false })
+      .limit(8),
   ]);
 
   const subjects = [...exams].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 20);
@@ -199,7 +203,17 @@ export default async function AdminPage({
       )}
 
       <div className="mt-10 max-w-xl">
-        <AdminSubjectForm departments={tree.map((item) => item.name)} />
+        <AdminSubjectForm
+          departments={(user.role === "super_admin"
+            ? tree
+            : tree.filter((department) => user.scopes.some((scope) => scope.departmentId === department.id))
+          ).map((department) => department.name)}
+          levels={
+            user.role === "super_admin" || user.scopes.some((scope) => !scope.level)
+              ? [...STUDY_LEVELS]
+              : STUDY_LEVELS.filter((level) => user.scopes.some((scope) => scope.level === level))
+          }
+        />
       </div>
 
       <section className="mt-12">

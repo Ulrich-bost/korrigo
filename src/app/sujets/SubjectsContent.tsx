@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ChevronRight, FolderOpen, GraduationCap } from "lucide-react";
-import { getCurrentUser, hasProgramAccess } from "@/lib/auth";
-import { getAcademicTree, getExamCatalog } from "@/lib/catalog";
+import { getCurrentUser, hasProgramAccess, type CurrentUser } from "@/lib/auth";
+import { getAcademicTree, getExamCatalog, type AcademicDepartment } from "@/lib/catalog";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   STUDY_LEVELS,
@@ -10,6 +10,7 @@ import {
   findBySlug,
   formatLevel,
   isStudyLevel,
+  type StudyLevel,
 } from "@/lib/taxonomy";
 import { SubjectCorrection } from "@/components/SubjectCorrection";
 import { rethrowNavigationError } from "@/lib/navigation-error";
@@ -27,7 +28,7 @@ export default async function SubjectsPage({
 }: {
   searchParams: SearchParams;
 }) {
-  let user = null;
+  let user: CurrentUser | null = null;
   let allSubjects: Awaited<ReturnType<typeof getExamCatalog>> = [];
   let tree: Awaited<ReturnType<typeof getAcademicTree>> = [];
   let catalogueUnavailable = false;
@@ -41,11 +42,12 @@ export default async function SubjectsPage({
     catalogueUnavailable = true;
   }
 
+  const visibleTree = scopeTree(tree, user);
   const { locale, dict } = getI18n();
   const t = dict.catalog;
-  const departments = tree.map((item) => item.name);
+  const departments = visibleTree.map((item) => item.name);
   const selectedDepartment = findBySlug(departments, searchParams.departement);
-  const structure = tree.find((item) => item.name === selectedDepartment);
+  const structure = visibleTree.find((item) => item.name === selectedDepartment);
 
   const inDepartment = selectedDepartment
     ? allSubjects.filter((s) => s.department === selectedDepartment)
@@ -56,8 +58,11 @@ export default async function SubjectsPage({
   const inFiliere = selectedFiliere
     ? inDepartment.filter((s) => s.faculty === selectedFiliere)
     : [];
+  const levelChoices = levelsFor(user, structure?.id);
   const selectedLevel =
-    searchParams.niveau && isStudyLevel(searchParams.niveau) ? searchParams.niveau : undefined;
+    searchParams.niveau && isStudyLevel(searchParams.niveau) && levelChoices.includes(searchParams.niveau)
+      ? searchParams.niveau
+      : undefined;
 
   const levelSubjects = selectedLevel
     ? inFiliere.filter((s) => s.level === selectedLevel)
@@ -79,7 +84,9 @@ export default async function SubjectsPage({
     const correction = corrections.get(subject.id);
     const canAccess =
       !!user &&
-      (user.role !== "student" || subject.isFree || isSubscribed || purchased.has(subject.id) || !!correction);
+      (user.role === "student"
+        ? subject.isFree || isSubscribed || purchased.has(subject.id)
+        : true);
     return { ...subject, canAccess, content: canAccess ? correction?.body ?? null : null };
   });
 
@@ -140,10 +147,20 @@ export default async function SubjectsPage({
         </nav>
       )}
 
+      {user?.role === "student" && !user.programId && (
+        <div className="mx-auto mt-10 max-w-lg card text-center">
+          <h2 className="text-xl font-semibold">{dict.account.program}</h2>
+          <p className="mt-2 text-sm text-slate-600">{dict.account.pickFaculty}</p>
+          <Link href="/compte" className="btn-primary mt-6 inline-flex">
+            {dict.account.chooseFaculty}
+          </Link>
+        </div>
+      )}
+
       {!selectedDepartment && (
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {departments.map((department) => {
-            const filiereCount = tree.find((item) => item.name === department)?.programs.length ?? 0;
+            const filiereCount = visibleTree.find((item) => item.name === department)?.programs.length ?? 0;
             return (
               <Link
                 key={department}
@@ -171,7 +188,7 @@ export default async function SubjectsPage({
             >
               <GraduationCap className="h-8 w-8 text-brand-600" />
               <h2 className="mt-3 font-semibold group-hover:text-brand-700">{localizeName(filiere, locale)}</h2>
-              <p className="mt-1 text-sm text-slate-500">{STUDY_LEVELS.join(" · ")}</p>
+              <p className="mt-1 text-sm text-slate-500">{levelChoices.join(" · ")}</p>
             </Link>
           ))}
         </div>
@@ -179,7 +196,7 @@ export default async function SubjectsPage({
 
       {selectedDepartment && selectedFiliere && !selectedLevel && (
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-          {STUDY_LEVELS.map((level) => (
+          {levelChoices.map((level) => (
             <Link
               key={level}
               href={`/sujets?departement=${departmentSlug(selectedDepartment)}&filiere=${filiereSlug(selectedFiliere)}&niveau=${level}`}
@@ -254,7 +271,7 @@ export default async function SubjectsPage({
             <p className="text-center text-slate-500">{t.emptyLevel}</p>
           )}
 
-          {!isSubscribed && visibleSubjects.length > 0 && (
+          {user?.role === "student" && !isSubscribed && visibleSubjects.length > 0 && (
             <div className="text-center">
               <Link href="/tarifs" className="btn-primary inline-flex">
                 {t.seeMore}
@@ -270,9 +287,34 @@ export default async function SubjectsPage({
         </div>
       )}
 
-      {!catalogueUnavailable && departments.length === 0 && (
+      {!catalogueUnavailable && departments.length === 0 && !(user?.role === "student" && !user.programId) && (
         <div className="mt-12 text-center text-slate-500">{t.empty}</div>
       )}
     </div>
   );
+}
+
+function scopeTree(tree: AcademicDepartment[], user: CurrentUser | null) {
+  if (!user || user.role === "super_admin") return tree;
+  if (user.role === "admin") {
+    const ids = new Set(user.scopes.map((scope) => scope.departmentId));
+    return tree.filter((department) => ids.has(department.id));
+  }
+  if (!user.programId) return [];
+  return tree
+    .map((department) => ({
+      ...department,
+      programs: department.programs.filter((program) => program.id === user.programId),
+    }))
+    .filter((department) => department.programs.length > 0);
+}
+
+function levelsFor(user: CurrentUser | null, departmentId: string | undefined): StudyLevel[] {
+  if (!departmentId || !user || user.role === "super_admin") return [...STUDY_LEVELS];
+  if (user.role === "student") {
+    return user.level && isStudyLevel(user.level) ? [user.level] : [];
+  }
+  const scopes = user.scopes.filter((scope) => scope.departmentId === departmentId);
+  if (scopes.some((scope) => !scope.level)) return [...STUDY_LEVELS];
+  return STUDY_LEVELS.filter((level) => scopes.some((scope) => scope.level === level));
 }

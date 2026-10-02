@@ -2,12 +2,12 @@
 
 import { useFormState } from "react-dom";
 import { createSubjectAction } from "@/app/actions/admin";
-import { STUDY_LEVELS } from "@/lib/taxonomy";
 import { useI18n } from "@/components/I18nProvider";
 import type { Dict } from "@/i18n/messages";
 
 interface Props {
   departments: string[];
+  levels: string[];
 }
 
 function errorText(code: string | undefined, errors: Dict["errors"]) {
@@ -15,7 +15,7 @@ function errorText(code: string | undefined, errors: Dict["errors"]) {
   return code in errors ? errors[code as keyof Dict["errors"]] : code;
 }
 
-export function AdminSubjectForm({ departments }: Props) {
+export function AdminSubjectForm({ departments, levels }: Props) {
   const { dict } = useI18n();
   const t = dict.admin;
   const [state, formAction] = useFormState(
@@ -67,7 +67,7 @@ export function AdminSubjectForm({ departments }: Props) {
           <div>
             <label className="label">{t.level}</label>
             <select name="level" required className="input" defaultValue="L1">
-              {STUDY_LEVELS.map((level) => (
+              {levels.map((level) => (
                 <option key={level} value={level}>{level}</option>
               ))}
             </select>
