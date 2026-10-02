@@ -27,7 +27,8 @@ export function SubscribeButton({ rail, loggedIn, examId, className }: Subscribe
     <button
       type="button"
       disabled={pending}
-      className={cn(className, pending && "opacity-60")}
+      aria-busy={pending}
+      className={cn(className, pending && "cursor-wait opacity-60")}
       onClick={() =>
         startTransition(async () => {
           if (!loggedIn) {

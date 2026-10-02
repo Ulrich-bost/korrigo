@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Calendar, Building2 } from "lucide-react";
+import { ArrowLeft, Calendar, Building2, Download, Lock } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { canAccessExam } from "@/lib/access";
 import { getCorrection, getExamBySlug, signedFileUrl } from "@/lib/catalog";
@@ -45,7 +45,8 @@ export default async function SubjectDetailPage({
   const user = await getCurrentUser();
   const canAccess = await canAccessExam(subject.id, user?.id ?? null);
   const correction = canAccess ? await getCorrection(subject.id) : null;
-  const fileUrl = canAccess ? await signedFileUrl(subject.filePath ?? correction?.file_path ?? null) : null;
+  const subjectFileUrl = canAccess ? await signedFileUrl(subject.filePath) : null;
+  const correctionFileUrl = canAccess ? await signedFileUrl(correction?.file_path ?? null) : null;
   const backHref =
     user?.role === "student" && user.programId
       ? "/espace"
@@ -94,7 +95,15 @@ export default async function SubjectDetailPage({
 
         <div className="mt-8 rounded-xl border border-slate-200 bg-slate-50 p-6">
           {canAccess ? (
-            <SubjectCorrection content={correction?.body} fileUrl={fileUrl} />
+            <div className="space-y-4">
+              {subjectFileUrl ? (
+                <a href={subjectFileUrl} className="btn-primary inline-flex gap-2">
+                  <Download className="h-4 w-4" />
+                  {t.downloadSubject}
+                </a>
+              ) : null}
+              <SubjectCorrection content={correction?.body} fileUrl={correctionFileUrl} />
+            </div>
           ) : !user ? (
             <div className="text-center">
               <h2 className="text-xl font-semibold">{t.createTitle}</h2>
@@ -117,7 +126,12 @@ export default async function SubjectDetailPage({
               </div>
             </div>
           ) : (
-            <Paywall loggedIn examId={subject.id} />
+            <div>
+              <div className="mb-4 flex justify-center text-ai-600">
+                <Lock className="h-6 w-6" aria-hidden />
+              </div>
+              <Paywall loggedIn examId={subject.id} />
+            </div>
           )}
         </div>
 

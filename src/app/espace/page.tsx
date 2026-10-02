@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { BookOpen, GraduationCap, Layers, Lock } from "lucide-react";
+import { BookOpen, Download, GraduationCap, Layers, Lock } from "lucide-react";
 import { getCurrentUser, hasProgramAccess } from "@/lib/auth";
-import { getExamCatalog, type CatalogExam } from "@/lib/catalog";
+import { getExamCatalog, signedFileUrl, type CatalogExam } from "@/lib/catalog";
+import { SubjectCorrection } from "@/components/SubjectCorrection";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getI18n } from "@/i18n/get-i18n";
 import { rethrowNavigationError } from "@/lib/navigation-error";
@@ -44,6 +45,36 @@ export default async function StudentSpacePage() {
     for (const row of purchases ?? []) purchased.add(row.exam_id as string);
   }
   const subscribed = hasProgramAccess(user, user.programId);
+  const corrections = new Map<string, { body: string | null; fileUrl: string | null }>();
+  if (exams.length > 0) {
+    const { data: correctionRows } = await supabase
+      .from("corrections")
+      .select("exam_id, body, file_path")
+      .in(
+        "exam_id",
+        exams.map((exam) => exam.id)
+      );
+    for (const row of correctionRows ?? []) {
+      const exam = exams.find((item) => item.id === row.exam_id);
+      const open = !!exam && (exam.isFree || subscribed || purchased.has(exam.id));
+      if (!open) continue;
+      const body = (row.body as string | null) ?? null;
+      const filePath = (row.file_path as string | null) ?? null;
+      if (!(body ?? "").trim() && !filePath) continue;
+      corrections.set(row.exam_id as string, {
+        body,
+        fileUrl: filePath ? await signedFileUrl(filePath) : null,
+      });
+    }
+  }
+
+  const subjectFiles = new Map<string, string>();
+  for (const exam of exams) {
+    const open = exam.isFree || subscribed || purchased.has(exam.id);
+    if (!open || !exam.filePath) continue;
+    const url = await signedFileUrl(exam.filePath);
+    if (url) subjectFiles.set(exam.id, url);
+  }
 
   const courses = courseRows ?? [];
   const known = new Set(courses.map((course) => course.id));
@@ -109,17 +140,41 @@ export default async function StudentSpacePage() {
                 <ul className="mt-3 grid gap-3">
                   {group.exams.map((exam) => {
                     const open = exam.isFree || subscribed || purchased.has(exam.id);
+                    const correction = open ? corrections.get(exam.id) : undefined;
+                    const subjectFileUrl = open ? subjectFiles.get(exam.id) : undefined;
                     return (
                       <li key={exam.id}>
-                        <Link href={`/sujets/${exam.slug}`} className="card flex items-center justify-between gap-4 py-4 transition hover:border-brand-300 hover:shadow-md">
-                          <span>
-                            <span className="block font-semibold text-brand-900">{exam.title}</span>
-                            <span className="mt-1 block text-sm text-slate-500">
+                        {open ? (
+                          <article className="card py-4">
+                            <Link href={`/sujets/${exam.slug}`} className="block font-semibold text-brand-900 hover:text-brand-700">
+                              {exam.title}
+                            </Link>
+                            <p className="mt-1 text-sm text-slate-500">
                               {exam.year} · {exam.examType}
+                            </p>
+                            {subjectFileUrl ? (
+                              <a href={subjectFileUrl} className="btn-primary mt-3 inline-flex gap-2">
+                                <Download className="h-4 w-4" />
+                                {dict.subject.downloadSubject}
+                              </a>
+                            ) : null}
+                            {correction ? (
+                              <div className="mt-4 border-t border-brand-100 pt-4">
+                                <SubjectCorrection content={correction.body} fileUrl={correction.fileUrl} />
+                              </div>
+                            ) : null}
+                          </article>
+                        ) : (
+                          <Link href={`/sujets/${exam.slug}`} className="card flex items-center justify-between gap-4 py-4 transition hover:border-brand-300 hover:shadow-md">
+                            <span>
+                              <span className="block font-semibold text-brand-900">{exam.title}</span>
+                              <span className="mt-1 block text-sm text-slate-500">
+                                {exam.year} · {exam.examType}
+                              </span>
                             </span>
-                          </span>
-                          {!open && <Lock className="h-4 w-4 shrink-0 text-ai-600" />}
-                        </Link>
+                            <Lock className="h-4 w-4 shrink-0 text-ai-600" aria-hidden />
+                          </Link>
+                        )}
                       </li>
                     );
                   })}

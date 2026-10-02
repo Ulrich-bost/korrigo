@@ -3,15 +3,14 @@ import { redirect } from "next/navigation";
 import { ChevronRight, FolderOpen, GraduationCap, Lock } from "lucide-react";
 import { getCurrentUser, type CurrentUser } from "@/lib/auth";
 import { getAcademicTree, getExamCatalog, type AcademicDepartment } from "@/lib/catalog";
+import { scopedDepartments, levelsForDepartment } from "@/lib/staff-scope";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
-  STUDY_LEVELS,
   departmentSlug,
   filiereSlug,
   findBySlug,
   formatLevel,
   isStudyLevel,
-  type StudyLevel,
 } from "@/lib/taxonomy";
 import { SubjectCorrection } from "@/components/SubjectCorrection";
 import { rethrowNavigationError } from "@/lib/navigation-error";
@@ -63,7 +62,7 @@ export default async function SubjectsPage({
   const inFiliere = selectedFiliere
     ? inDepartment.filter((s) => s.faculty === selectedFiliere)
     : [];
-  const levelChoices = levelsFor(user, structure?.id);
+  const levelChoices = levelsForDepartment(user, structure?.id, structure?.programs.find((program) => program.name === selectedFiliere)?.id);
   const selectedLevel =
     searchParams.niveau && isStudyLevel(searchParams.niveau) && levelChoices.includes(searchParams.niveau)
       ? searchParams.niveau
@@ -285,10 +284,7 @@ export default async function SubjectsPage({
 
 function scopeTree(tree: AcademicDepartment[], user: CurrentUser | null) {
   if (!user || user.role === "super_admin") return tree;
-  if (user.role === "admin") {
-    const ids = new Set(user.scopes.map((scope) => scope.departmentId));
-    return tree.filter((department) => ids.has(department.id));
-  }
+  if (user.role === "admin") return scopedDepartments(tree, user);
   if (!user.programId) return [];
   return tree
     .map((department) => ({
@@ -296,14 +292,4 @@ function scopeTree(tree: AcademicDepartment[], user: CurrentUser | null) {
       programs: department.programs.filter((program) => program.id === user.programId),
     }))
     .filter((department) => department.programs.length > 0);
-}
-
-function levelsFor(user: CurrentUser | null, departmentId: string | undefined): StudyLevel[] {
-  if (!departmentId || !user || user.role === "super_admin") return [...STUDY_LEVELS];
-  if (user.role === "student") {
-    return user.level && isStudyLevel(user.level) ? [user.level] : [];
-  }
-  const scopes = user.scopes.filter((scope) => scope.departmentId === departmentId);
-  if (scopes.some((scope) => !scope.level)) return [...STUDY_LEVELS];
-  return STUDY_LEVELS.filter((level) => scopes.some((scope) => scope.level === level));
 }

@@ -18,8 +18,10 @@ export interface UserSubscription {
 }
 
 export interface AdminScope {
-  departmentId: string;
+  departmentId: string | null;
   departmentName: string;
+  programId: string | null;
+  programName: string | null;
   level: string | null;
 }
 
@@ -53,7 +55,10 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
         .from("subscriptions")
         .select("program_id, plan, status, current_period_end")
         .eq("profile_id", user.id),
-      supabase.from("admin_scopes").select("department_id, level, departments(name)").eq("profile_id", user.id),
+      supabase
+        .from("admin_scopes")
+        .select("department_id, program_id, level, departments(name), programs(name, department_id, departments(name))")
+        .eq("profile_id", user.id),
     ]);
 
     const role = (profile?.role as AppRole) ?? "student";
@@ -77,9 +82,20 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
         : [],
       scopes: (scopes ?? []).map((scope) => {
         const department = Array.isArray(scope.departments) ? scope.departments[0] : scope.departments;
+        const program = Array.isArray(scope.programs) ? scope.programs[0] : scope.programs;
+        const programDepartment = program
+          ? Array.isArray(program.departments)
+            ? program.departments[0]
+            : program.departments
+          : null;
         return {
-          departmentId: scope.department_id as string,
-          departmentName: (department as { name?: string } | null)?.name ?? "",
+          departmentId: (scope.department_id as string | null) ?? (program?.department_id as string | null) ?? null,
+          departmentName:
+            (department as { name?: string } | null)?.name ??
+            (programDepartment as { name?: string } | null)?.name ??
+            "",
+          programId: (scope.program_id as string | null) ?? null,
+          programName: program?.name ?? null,
           level: (scope.level as string | null) ?? null,
         };
       }),

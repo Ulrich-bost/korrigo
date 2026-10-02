@@ -68,6 +68,9 @@ export type Dict = {
     login: string;
     heading: string;
     download: string;
+    downloadSubject: string;
+    downloadCorrection: string;
+    noCorrection: string;
     added: (date: string, views: number) => string;
   };
   auth: {
@@ -170,13 +173,57 @@ export type Dict = {
   legal: { placeholder: string; mentions: string; terms: string; privacy: string };
   admin: {
     title: string;
+    hello: (name: string) => string;
+    scopeAll: string;
+    scopeLimited: (department: string, level: string) => string;
     summary: (subjects: number, structures: number, users: number) => string;
     created: string;
     add: string;
+    publishLead: string;
+    subjectSection: string;
+    subjectFile: string;
+    subjectFileHint: string;
+    subjectFileSave: string;
+    subjectFileSaved: string;
+    subjectFileAttached: string;
     titleField: string;
     description: string;
     content: string;
     contentPlaceholder: string;
+    correction: string;
+    correctionLead: string;
+    correctionPresent: string;
+    correctionMissing: string;
+    correctionFile: string;
+    correctionFileHint: string;
+    correctionAttached: string;
+    accessChoice: string;
+    openCorrection: string;
+    completeCorrection: string;
+    correctionSaved: string;
+    backDashboard: string;
+    navOverview: string;
+    navSubjects: string;
+    navAccounts: string;
+    navProfile: string;
+    profileLead: string;
+    profileSave: string;
+    scopeProgramLabel: (department: string, program: string, level: string) => string;
+    scopeKind: string;
+    scopeWhole: string;
+    scopeProgramLevel: string;
+    accountsTitle: string;
+    accountsManageLead: string;
+    createAccount: string;
+    accountRole: string;
+    accountPassword: string;
+    accountPasswordKeep: string;
+    addScope: string;
+    removeScope: string;
+    saveAccount: string;
+    deleteAccount: string;
+    demoLocked: string;
+    accountSaved: string;
     faculty: string;
     facultyPlaceholder: string;
     filiere: string;
@@ -190,17 +237,36 @@ export type Dict = {
     premium: string;
     publish: string;
     latest: string;
+    manage: string;
+    emptySubjects: string;
     colTitle: string;
     colFaculty: string;
     colFiliere: string;
     colLevel: string;
     colFree: string;
+    colCorrection: string;
     yes: string;
     no: string;
+    free: string;
+    paid: string;
     namesStayFrench: string;
     overview: string;
+    trendTitle: string;
+    trendLead: string;
+    mixTitle: string;
+    mixLead: string;
+    papersUnit: string;
+    shareOfCatalog: (count: number) => string;
+    emptyTrend: string;
     subjects: string;
+    freeSubjects: string;
+    paidSubjects: string;
+    students: string;
+    withCorrection: (count: number) => string;
+    accountsTotal: (count: number) => string;
     accounts: string;
+    accountsLead: string;
+    accountsLeadAll: string;
     activeAccess: string;
     paymentsOk: string;
     paymentsPending: string;
@@ -209,6 +275,8 @@ export type Dict = {
     none: string;
     recentAccounts: string;
     recentPayments: string;
+    paymentsLead: string;
+    paymentsLeadAll: string;
     emptyAccounts: string;
     emptyPayments: string;
     colName: string;
@@ -315,6 +383,9 @@ const fr: Dict = {
     login: "Se connecter",
     heading: "Sujet et corrigé",
     download: "Télécharger le PDF",
+    downloadSubject: "Télécharger le sujet",
+    downloadCorrection: "Télécharger le corrigé",
+    noCorrection: "Pas encore de corrigé pour ce sujet.",
     added: (date, views) => `Ajouté le ${date} · ${views} vues`,
   },
   auth: {
@@ -445,14 +516,58 @@ const fr: Dict = {
   },
   admin: {
     title: "Administration",
+    hello: (name) => `Bonjour ${name}`,
+    scopeAll: "Tout l'établissement",
+    scopeLimited: (department, level) => `${department} · ${level}`,
     summary: (subjects, structures, users) =>
       `${subjects} sujets · ${structures} facultés et instituts · ${users} utilisateurs`,
     created: "Sujet ajouté avec succès.",
-    add: "Ajouter un sujet",
+    add: "Publier un sujet",
+    publishLead: "Le sujet et son corrigé sont publiés dans votre périmètre.",
+    subjectSection: "Sujet",
+    subjectFile: "Fichier du sujet",
+    subjectFileHint: "PDF ou image, obligatoire. Document de l'épreuve, distinct du corrigé.",
+    subjectFileSave: "Enregistrer le fichier du sujet",
+    subjectFileSaved: "Fichier du sujet enregistré.",
+    subjectFileAttached: "Le fichier du sujet est en ligne.",
     titleField: "Titre",
     description: "Description",
-    content: "Énoncé et corrigé",
-    contentPlaceholder: "Texte du sujet et de la correction",
+    content: "Texte du corrigé",
+    contentPlaceholder: "Rédigez le corrigé lié à ce sujet",
+    correction: "Corrigé",
+    correctionLead: "Ce texte est enregistré comme corrigé de ce sujet.",
+    correctionPresent: "Présent",
+    correctionMissing: "Absent",
+    correctionFile: "Fichier du corrigé",
+    correctionFileHint: "PDF ou image, facultatif. Distinct du fichier du sujet.",
+    correctionAttached: "Un fichier de corrigé est déjà lié.",
+    accessChoice: "Ce sujet est",
+    openCorrection: "Voir",
+    completeCorrection: "Compléter",
+    correctionSaved: "Corrigé enregistré.",
+    backDashboard: "Retour au tableau de bord",
+    navOverview: "Vue d'ensemble",
+    navSubjects: "Sujets et corrigés",
+    navAccounts: "Comptes",
+    navProfile: "Mon profil",
+    profileLead: "Modifiez votre nom et votre mot de passe. Le rôle, l'e-mail et le périmètre ne se changent pas ici.",
+    profileSave: "Enregistrer",
+    scopeProgramLabel: (department, program, level) => `${department} · ${program} · ${level}`,
+    scopeKind: "Type de périmètre",
+    scopeWhole: "Tout le département ou l'institut",
+    scopeProgramLevel: "Une filière et un niveau",
+    accountsTitle: "Comptes",
+    accountsManageLead: "Créez un étudiant, un admin ou un super admin. Seul le super admin assigne les périmètres.",
+    createAccount: "Créer le compte",
+    accountRole: "Rôle",
+    accountPassword: "Mot de passe",
+    accountPasswordKeep: "Laisser vide pour conserver le mot de passe.",
+    addScope: "Ajouter un périmètre",
+    removeScope: "Retirer",
+    saveAccount: "Enregistrer le compte",
+    deleteAccount: "Supprimer le compte",
+    demoLocked: "Compte de démonstration, non modifiable.",
+    accountSaved: "Compte enregistré.",
     faculty: "Faculté ou institut",
     facultyPlaceholder: "Faculté des sciences",
     filiere: "Filière",
@@ -466,17 +581,36 @@ const fr: Dict = {
     premium: "Hors des 3 premiers sujets du niveau (après « Voir plus »)",
     publish: "Publier",
     latest: "Derniers sujets",
+    manage: "Sujets et corrigés",
+    emptySubjects: "Aucun sujet dans ce périmètre.",
     colTitle: "Titre",
     colFaculty: "Faculté",
     colFiliere: "Filière",
     colLevel: "Niveau",
-    colFree: "Offert",
+    colFree: "Accès",
+    colCorrection: "Corrigé",
     yes: "Oui",
     no: "Non",
+    free: "Gratuit",
+    paid: "Payant",
     namesStayFrench: "Les noms enregistrés restent ceux du catalogue en français.",
     overview: "Vue d'ensemble",
+    trendTitle: "Activité",
+    trendLead: "Sujets publiés, six derniers mois",
+    mixTitle: "Accès",
+    mixLead: "Gratuit et payant dans votre périmètre",
+    papersUnit: "sujets",
+    shareOfCatalog: (count) => `${count} % du catalogue`,
+    emptyTrend: "Aucune publication sur cette période.",
     subjects: "Sujets",
+    freeSubjects: "Sujets gratuits",
+    paidSubjects: "Sujets payants",
+    students: "Étudiants",
+    withCorrection: (count) => (count === 1 ? "1 avec corrigé" : `${count} avec corrigé`),
+    accountsTotal: (count) => (count === 1 ? "1 compte au total" : `${count} comptes au total`),
     accounts: "Comptes",
+    accountsLead: "Étudiants rattachés à votre périmètre.",
+    accountsLeadAll: "Tous les comptes de l'établissement.",
     activeAccess: "Accès actifs",
     paymentsOk: "Paiements réussis",
     paymentsPending: "Paiements en attente",
@@ -485,6 +619,8 @@ const fr: Dict = {
     none: "—",
     recentAccounts: "Derniers comptes",
     recentPayments: "Derniers paiements",
+    paymentsLead: "Paiements des étudiants de votre périmètre.",
+    paymentsLeadAll: "Tous les paiements de l'établissement.",
     emptyAccounts: "Aucun compte pour le moment.",
     emptyPayments: "Aucun paiement pour le moment.",
     colName: "Nom",
@@ -591,6 +727,9 @@ const en: Dict = {
     login: "Log in",
     heading: "Paper and correction",
     download: "Download PDF",
+    downloadSubject: "Download the paper",
+    downloadCorrection: "Download the correction",
+    noCorrection: "No correction for this paper yet.",
     added: (date, views) => `Added on ${date} · ${views} views`,
   },
   auth: {
@@ -720,14 +859,58 @@ const en: Dict = {
   },
   admin: {
     title: "Administration",
+    hello: (name) => `Hello ${name}`,
+    scopeAll: "The whole institution",
+    scopeLimited: (department, level) => `${department} · ${level}`,
     summary: (subjects, structures, users) =>
       `${subjects} papers · ${structures} faculties and institutes · ${users} users`,
     created: "Paper added.",
-    add: "Add a paper",
+    add: "Publish a paper",
+    publishLead: "The paper and its correction are published in your scope.",
+    subjectSection: "Paper",
+    subjectFile: "Paper file",
+    subjectFileHint: "Required PDF or image. The exam paper, separate from the correction.",
+    subjectFileSave: "Save the paper file",
+    subjectFileSaved: "Paper file saved.",
+    subjectFileAttached: "The paper file is online.",
     titleField: "Title",
     description: "Description",
-    content: "Paper and correction",
-    contentPlaceholder: "Text of the paper and the correction",
+    content: "Correction text",
+    contentPlaceholder: "Write the correction linked to this paper",
+    correction: "Correction",
+    correctionLead: "This text is saved as the correction for this paper.",
+    correctionPresent: "Present",
+    correctionMissing: "Missing",
+    correctionFile: "Correction file",
+    correctionFileHint: "Optional PDF or image. Separate from the paper file.",
+    correctionAttached: "A correction file is already linked.",
+    accessChoice: "This paper is",
+    openCorrection: "View",
+    completeCorrection: "Complete",
+    correctionSaved: "Correction saved.",
+    backDashboard: "Back to the dashboard",
+    navOverview: "Overview",
+    navSubjects: "Papers and corrections",
+    navAccounts: "Accounts",
+    navProfile: "My profile",
+    profileLead: "Update your name and password. Role, email and scope are not changed here.",
+    profileSave: "Save",
+    scopeProgramLabel: (department, program, level) => `${department} · ${program} · ${level}`,
+    scopeKind: "Scope type",
+    scopeWhole: "A whole faculty or institute",
+    scopeProgramLevel: "One programme and one year",
+    accountsTitle: "Accounts",
+    accountsManageLead: "Create a student, an admin or a super admin. Only a super admin assigns scopes.",
+    createAccount: "Create account",
+    accountRole: "Role",
+    accountPassword: "Password",
+    accountPasswordKeep: "Leave blank to keep the current password.",
+    addScope: "Add a scope",
+    removeScope: "Remove",
+    saveAccount: "Save account",
+    deleteAccount: "Delete account",
+    demoLocked: "Demo account, locked.",
+    accountSaved: "Account saved.",
     faculty: "Faculty or institute",
     facultyPlaceholder: "Faculté des sciences",
     filiere: "Programme",
@@ -741,17 +924,36 @@ const en: Dict = {
     premium: "Beyond the first 3 papers of the year (after “See more”)",
     publish: "Publish",
     latest: "Latest papers",
+    manage: "Papers and corrections",
+    emptySubjects: "No papers in this scope.",
     colTitle: "Title",
     colFaculty: "Faculty",
     colFiliere: "Programme",
     colLevel: "Year",
-    colFree: "Free",
+    colFree: "Access",
+    colCorrection: "Correction",
     yes: "Yes",
     no: "No",
+    free: "Free",
+    paid: "Paid",
     namesStayFrench: "Saved names stay in French so they match the catalogue.",
     overview: "Overview",
+    trendTitle: "Activity",
+    trendLead: "Papers published, last six months",
+    mixTitle: "Access",
+    mixLead: "Free and paid in your scope",
+    papersUnit: "papers",
+    shareOfCatalog: (count) => `${count}% of the catalogue`,
+    emptyTrend: "No publications in this period.",
     subjects: "Papers",
+    freeSubjects: "Free papers",
+    paidSubjects: "Paid papers",
+    students: "Students",
+    withCorrection: (count) => (count === 1 ? "1 with a correction" : `${count} with a correction`),
+    accountsTotal: (count) => (count === 1 ? "1 account in total" : `${count} accounts in total`),
     accounts: "Accounts",
+    accountsLead: "Students in your scope.",
+    accountsLeadAll: "Every account in the institution.",
     activeAccess: "Active access",
     paymentsOk: "Successful payments",
     paymentsPending: "Pending payments",
@@ -760,6 +962,8 @@ const en: Dict = {
     none: "—",
     recentAccounts: "Latest accounts",
     recentPayments: "Latest payments",
+    paymentsLead: "Payments from students in your scope.",
+    paymentsLeadAll: "Every payment in the institution.",
     emptyAccounts: "No accounts yet.",
     emptyPayments: "No payments yet.",
     colName: "Name",
@@ -866,6 +1070,9 @@ const ar: Dict = {
     login: "دخول",
     heading: "الموضوع والتصحيح",
     download: "تحميل PDF",
+    downloadSubject: "تحميل الموضوع",
+    downloadCorrection: "تحميل التصحيح",
+    noCorrection: "لا يوجد تصحيح لهذا الموضوع بعد.",
     added: (date, views) => `أضيف في ${date} · ${views} مشاهدة`,
   },
   auth: {
@@ -988,13 +1195,57 @@ const ar: Dict = {
   },
   admin: {
     title: "الإدارة",
+    hello: (name) => `مرحبا ${name}`,
+    scopeAll: "كل المؤسسة",
+    scopeLimited: (department, level) => `${department} · ${level}`,
     summary: (subjects, structures, users) => `${subjects} مواضيع · ${structures} كليات ومعاهد · ${users} مستخدمين`,
     created: "تمت إضافة الموضوع.",
-    add: "إضافة موضوع",
+    add: "نشر موضوع",
+    publishLead: "يُنشر الموضوع وتصحيحه ضمن نطاقك.",
+    subjectSection: "الموضوع",
+    subjectFile: "ملف الموضوع",
+    subjectFileHint: "PDF أو صورة، إلزامي. وثيقة الاختبار، منفصلة عن التصحيح.",
+    subjectFileSave: "حفظ ملف الموضوع",
+    subjectFileSaved: "تم حفظ ملف الموضوع.",
+    subjectFileAttached: "ملف الموضوع متاح.",
     titleField: "العنوان",
     description: "الوصف",
-    content: "النص والتصحيح",
-    contentPlaceholder: "نص الموضوع والتصحيح",
+    content: "نص التصحيح",
+    contentPlaceholder: "اكتب التصحيح المرتبط بهذا الموضوع",
+    correction: "التصحيح",
+    correctionLead: "يُحفظ هذا النص كتصحيح لهذا الموضوع.",
+    correctionPresent: "موجود",
+    correctionMissing: "غير موجود",
+    correctionFile: "ملف التصحيح",
+    correctionFileHint: "PDF أو صورة، اختياري. منفصل عن ملف الموضوع.",
+    correctionAttached: "يوجد ملف تصحيح مرتبط.",
+    accessChoice: "هذا الموضوع",
+    openCorrection: "عرض",
+    completeCorrection: "إكمال",
+    correctionSaved: "تم حفظ التصحيح.",
+    backDashboard: "العودة إلى لوحة التحكم",
+    navOverview: "نظرة عامة",
+    navSubjects: "المواضيع والتصحيحات",
+    navAccounts: "الحسابات",
+    navProfile: "ملفي",
+    profileLead: "عدّل اسمك وكلمة السر. الدور والبريد والنطاق لا يُغيَّران من هنا.",
+    profileSave: "حفظ",
+    scopeProgramLabel: (department, program, level) => `${department} · ${program} · ${level}`,
+    scopeKind: "نوع النطاق",
+    scopeWhole: "كل الكلية أو المعهد",
+    scopeProgramLevel: "شعبة واحدة ومستوى واحد",
+    accountsTitle: "الحسابات",
+    accountsManageLead: "أنشئ طالبا أو مديرا أو مديرا عاما. المدير العام وحده يحدّد النطاقات.",
+    createAccount: "إنشاء الحساب",
+    accountRole: "الدور",
+    accountPassword: "كلمة السر",
+    accountPasswordKeep: "اتركه فارغا للإبقاء على كلمة السر.",
+    addScope: "إضافة نطاق",
+    removeScope: "سحب",
+    saveAccount: "حفظ الحساب",
+    deleteAccount: "حذف الحساب",
+    demoLocked: "حساب تجريبي، غير قابل للتعديل.",
+    accountSaved: "تم حفظ الحساب.",
     faculty: "الكلية أو المعهد",
     facultyPlaceholder: "Faculté des sciences",
     filiere: "الشعبة",
@@ -1008,17 +1259,36 @@ const ar: Dict = {
     premium: "خارج المواضيع الثلاثة الأولى للمستوى (بعد «عرض المزيد»)",
     publish: "نشر",
     latest: "آخر المواضيع",
+    manage: "المواضيع والتصحيحات",
+    emptySubjects: "لا توجد مواضيع في هذا النطاق.",
     colTitle: "العنوان",
     colFaculty: "الكلية",
     colFiliere: "الشعبة",
     colLevel: "المستوى",
-    colFree: "مجاني",
+    colFree: "الوصول",
+    colCorrection: "التصحيح",
     yes: "نعم",
     no: "لا",
+    free: "مجاني",
+    paid: "مدفوع",
     namesStayFrench: "الأسماء المحفوظة تبقى بالفرنسية لتطابق الفهرس.",
     overview: "نظرة عامة",
+    trendTitle: "النشاط",
+    trendLead: "المواضيع المنشورة خلال ستة أشهر",
+    mixTitle: "الوصول",
+    mixLead: "المجاني والمدفوع في نطاقك",
+    papersUnit: "مواضيع",
+    shareOfCatalog: (count) => `${count}٪ من الفهرس`,
+    emptyTrend: "لا منشورات في هذه الفترة.",
     subjects: "المواضيع",
+    freeSubjects: "مواضيع مجانية",
+    paidSubjects: "مواضيع مدفوعة",
+    students: "الطلبة",
+    withCorrection: (count) => (count === 1 ? "موضوع واحد مع تصحيح" : `${count} مع تصحيح`),
+    accountsTotal: (count) => (count === 1 ? "حساب واحد في المجموع" : `${count} حسابات في المجموع`),
     accounts: "الحسابات",
+    accountsLead: "طلبة نطاقك.",
+    accountsLeadAll: "كل حسابات المؤسسة.",
     activeAccess: "وصول مفعّل",
     paymentsOk: "مدفوعات ناجحة",
     paymentsPending: "مدفوعات قيد الانتظار",
@@ -1027,6 +1297,8 @@ const ar: Dict = {
     none: "—",
     recentAccounts: "آخر الحسابات",
     recentPayments: "آخر المدفوعات",
+    paymentsLead: "مدفوعات طلبة نطاقك.",
+    paymentsLeadAll: "كل مدفوعات المؤسسة.",
     emptyAccounts: "لا توجد حسابات حاليا.",
     emptyPayments: "لا توجد مدفوعات حاليا.",
     colName: "الاسم",

@@ -6,6 +6,7 @@ import { getAcademicTree } from "@/lib/catalog";
 import { formatDate } from "@/lib/utils";
 import { addExamDateAction, updatePasswordAction, updateProfileAction } from "@/app/actions/account";
 import { LogoutZone } from "@/components/LogoutZone";
+import { SubmitButton } from "@/components/SubmitButton";
 import { syncLatestPayment } from "@/app/actions/subscription";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { STUDY_LEVELS } from "@/lib/taxonomy";
@@ -18,6 +19,7 @@ export default async function AccountPage({
 }) {
   const sessionUser = await getCurrentUser();
   if (!sessionUser) redirect("/connexion?redirect=/compte");
+  if (sessionUser.role === "admin" || sessionUser.role === "super_admin") redirect("/admin/profil");
 
   if (searchParams.success) {
     await syncLatestPayment();
@@ -135,7 +137,7 @@ export default async function AccountPage({
                 <label className="label" htmlFor="objectives">{t.objectives}</label>
                 <textarea id="objectives" name="objectives" rows={3} className="input" defaultValue={user.objectives ?? ""} />
               </div>
-              <button type="submit" className="btn-primary">{t.saveProfile}</button>
+              <SubmitButton pendingLabel={dict.auth.loading}>{t.saveProfile}</SubmitButton>
             </form>
 
             <form action={updatePasswordAction} className="mt-8 space-y-4 border-t border-brand-100 pt-6">
@@ -148,7 +150,7 @@ export default async function AccountPage({
                 <label className="label" htmlFor="passwordConfirm">{t.passwordConfirm}</label>
                 <input id="passwordConfirm" name="passwordConfirm" type="password" required minLength={8} autoComplete="new-password" className="input" />
               </div>
-              <button type="submit" className="btn-secondary">{t.saveProfile}</button>
+              <SubmitButton variant="secondary" pendingLabel={dict.auth.loading}>{t.saveProfile}</SubmitButton>
             </form>
           </section>
 
@@ -179,7 +181,7 @@ export default async function AccountPage({
               <form action={addExamDateAction} className="mt-4 space-y-3">
                 <input name="label" required placeholder={t.examLabel} className="input" />
                 <input name="examOn" type="date" required className="input" aria-label={t.examDate} />
-                <button type="submit" className="btn-secondary">{t.addDate}</button>
+                <SubmitButton variant="secondary" pendingLabel={dict.auth.loading}>{t.addDate}</SubmitButton>
               </form>
             </section>
 

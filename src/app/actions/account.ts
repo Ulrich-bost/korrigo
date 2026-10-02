@@ -64,6 +64,47 @@ export async function updateProfileAction(formData: FormData) {
   redirect("/compte?saved=name");
 }
 
+function staffOrRedirect(user: { role: string } | null) {
+  if (!user) redirect("/connexion?redirect=/admin/profil");
+  if (user.role !== "admin" && user.role !== "super_admin") redirect("/");
+}
+
+export async function updateStaffProfileAction(formData: FormData) {
+  const user = await requireAuth().catch(() => null);
+  staffOrRedirect(user);
+  if (!user) return;
+
+  const name = z.string().trim().min(2).max(160).safeParse(formData.get("name"));
+  if (!name.success) redirect("/admin/profil?error=name");
+
+  const supabase = createSupabaseServerClient();
+  const { error } = await supabase.from("profiles").update({ full_name: name.data }).eq("id", user.id);
+  if (error) redirect("/admin/profil?error=unavailable");
+
+  await supabase.auth.updateUser({ data: { full_name: name.data } });
+  revalidatePath("/", "layout");
+  revalidatePath("/admin");
+  revalidatePath("/admin/profil");
+  redirect("/admin/profil?saved=name");
+}
+
+export async function updateStaffPasswordAction(formData: FormData) {
+  const user = await requireAuth().catch(() => null);
+  staffOrRedirect(user);
+
+  const password = formData.get("password")?.toString() ?? "";
+  const passwordConfirm = formData.get("passwordConfirm")?.toString() ?? "";
+  if (password !== passwordConfirm) redirect("/admin/profil?error=password_mismatch");
+  if (password.length < 8) redirect("/admin/profil?error=password");
+
+  const supabase = createSupabaseServerClient();
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) redirect("/admin/profil?error=unavailable");
+
+  revalidatePath("/admin/profil");
+  redirect("/admin/profil?saved=password");
+}
+
 export async function updatePasswordAction(formData: FormData) {
   const user = await requireAuth().catch(() => null);
   if (!user) redirect("/connexion?redirect=/compte");

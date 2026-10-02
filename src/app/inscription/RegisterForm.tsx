@@ -5,6 +5,7 @@ import { useFormState } from "react-dom";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { registerAction } from "@/app/actions/auth";
+import { SubmitButton } from "@/components/SubmitButton";
 import { useI18n } from "@/components/I18nProvider";
 import type { AcademicDepartment } from "@/lib/catalog";
 import { STUDY_LEVELS } from "@/lib/taxonomy";
@@ -111,9 +112,9 @@ function RegisterFormFields({ tree }: { tree: AcademicDepartment[] }) {
           </select>
           <p className="mt-1 text-xs text-slate-500">{dict.space.levelHint}</p>
         </div>
-        <button type="submit" className="btn-primary w-full">
+        <SubmitButton className="w-full" pendingLabel={t.loading}>
           {t.submitSignup}
-        </button>
+        </SubmitButton>
       </form>
 
       <p className="mt-6 text-center text-sm text-slate-600">

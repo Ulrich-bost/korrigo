@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, Inter, Fira_Code, Noto_Sans_Arabic } from "next/font/google";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import { SiteChrome } from "@/components/SiteChrome";
 import { I18nProvider } from "@/components/I18nProvider";
 import { getSession } from "@/lib/auth";
 import { getI18n } from "@/i18n/get-i18n";
@@ -31,9 +32,9 @@ export default async function RootLayout({
         className={`${heading.variable} ${body.variable} ${code.variable} ${arabic.variable} ${locale === "ar" ? "font-arabic" : "font-body"} min-h-screen bg-brand-50 text-slate-900 antialiased`}
       >
         <I18nProvider locale={locale}>
-          <Navbar session={session} locale={locale} />
-          <main className="min-h-[calc(100vh-8rem)]">{children}</main>
-          <Footer locale={locale} />
+          <SiteChrome navbar={<Navbar session={session} locale={locale} />} footer={<Footer locale={locale} />}>
+            {children}
+          </SiteChrome>
         </I18nProvider>
       </body>
     </html>

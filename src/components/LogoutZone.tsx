@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { LogOut, X } from "lucide-react";
 import { logoutAction } from "@/app/actions/auth";
+import { SubmitButton } from "@/components/SubmitButton";
 import { useI18n } from "@/components/I18nProvider";
 
 export function LogoutZone() {
@@ -98,9 +99,9 @@ export function LogoutZone() {
                 {t.danger.cancel}
               </button>
               <form action={logoutAction}>
-                <button type="submit" className="btn-ai">
+                <SubmitButton variant="ai" pendingLabel={dict.auth.loading}>
                   {t.danger.confirm}
-                </button>
+                </SubmitButton>
               </form>
             </div>
           </div>

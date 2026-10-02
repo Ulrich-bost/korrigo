@@ -36,7 +36,7 @@ export function Navbar({ session, locale }: NavbarProps) {
           {session ? (
             <>
               <Link
-                href="/compte"
+                href={session.role === "admin" || session.role === "super_admin" ? "/admin/profil" : "/compte"}
                 aria-label={session.name ? `${t.account}, ${session.name}` : t.account}
                 title={session.name || t.account}
                 className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-brand-700"
@@ -74,15 +74,21 @@ export function Navbar({ session, locale }: NavbarProps) {
                 {session?.role === "student" ? t.exams : t.catalog}
               </Link>
               {session ? (
-                <Link
-                  href="/compte"
-                  aria-label={session.name ? `${t.account}, ${session.name}` : t.account}
-                  title={session.name || t.account}
-                  className="inline-flex items-center gap-2"
-                >
-                  <CircleUser className="h-5 w-5 text-brand-800" aria-hidden />
-                  {t.account}
-                </Link>
+                <>
+                  <Link
+                    href={session.role === "admin" || session.role === "super_admin" ? "/admin/profil" : "/compte"}
+                    aria-label={session.name ? `${t.account}, ${session.name}` : t.account}
+                    className="inline-flex items-center gap-2"
+                  >
+                    <CircleUser className="h-5 w-5 text-brand-800" aria-hidden />
+                    {t.account}
+                  </Link>
+                  {(session.role === "admin" || session.role === "super_admin") && (
+                    <Link href="/admin" className="font-medium text-ai-600">
+                      {t.admin}
+                    </Link>
+                  )}
+                </>
               ) : (
                 <>
                   <Link href="/connexion">{t.login}</Link>

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { loginAction } from "@/app/actions/auth";
 import { AuthShell } from "@/components/AuthShell";
+import { SubmitButton } from "@/components/SubmitButton";
 import { useI18n } from "@/components/I18nProvider";
 import type { Dict } from "@/i18n/messages";
 
@@ -47,9 +48,9 @@ function LoginForm() {
           <label htmlFor="password" className="label">{t.password}</label>
           <input id="password" name="password" type="password" required className="input" />
         </div>
-        <button type="submit" className="btn-primary w-full">
+        <SubmitButton className="w-full" pendingLabel={t.loading}>
           {t.submitLogin}
-        </button>
+        </SubmitButton>
       </form>
 
       <p className="mt-6 text-center text-sm text-slate-600">
