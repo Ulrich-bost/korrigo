@@ -1,20 +1,6 @@
 import { Download } from "lucide-react";
 import { getI18n } from "@/i18n/get-i18n";
 
-const FALLBACK_CONTENT = `Exercice 1 — Analyse (8 points)
-
-Étudier la convergence de la série ∑ (1/n²) et déterminer sa somme.
-
-Correction :
-Il s'agit d'une série de Riemann avec p = 2 > 1, donc convergente. Sa somme vaut π²/6 (problème de Bâle).
-
-Exercice 2 — Algèbre linéaire (12 points)
-
-Soit A une matrice 3×3. Déterminer les valeurs propres et diagonaliser A.
-
-Correction :
-χ_A(λ) = det(A − λI). Les valeurs propres sont λ₁ = 1, λ₂ = 2, λ₃ = −1. La matrice est diagonalisable dans une base de vecteurs propres.`;
-
 export function SubjectCorrection({
   content,
   fileUrl,
@@ -23,20 +9,25 @@ export function SubjectCorrection({
   fileUrl?: string | null;
 }) {
   const { dict } = getI18n();
-  const text = (content && content.trim()) || FALLBACK_CONTENT;
+  const text = content?.trim() ?? "";
+  if (!text && !fileUrl) {
+    return <p className="text-sm text-slate-600">{dict.subject.noCorrection}</p>;
+  }
 
   return (
     <div>
-      <h2 className="font-semibold text-slate-900">{dict.subject.heading}</h2>
-      <div className="mt-4 whitespace-pre-wrap rounded-lg bg-white p-6 text-sm leading-relaxed text-slate-700 shadow-inner">
-        {text}
-      </div>
-      {fileUrl && (
-        <a href={fileUrl} className="btn-primary mt-4 inline-flex gap-2">
+      <h2 className="font-semibold text-brand-900">{dict.subject.heading}</h2>
+      {text ? (
+        <div className="mt-4 whitespace-pre-wrap rounded-lg bg-white p-6 text-sm leading-relaxed text-slate-700 shadow-inner">
+          {text}
+        </div>
+      ) : null}
+      {fileUrl ? (
+        <a href={fileUrl} className="btn-secondary mt-4 inline-flex gap-2">
           <Download className="h-4 w-4" />
-          {dict.subject.download}
+          {dict.subject.downloadCorrection}
         </a>
-      )}
+      ) : null}
     </div>
   );
 }

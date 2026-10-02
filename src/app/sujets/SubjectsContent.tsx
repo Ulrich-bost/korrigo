@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { ChevronRight, FolderOpen, GraduationCap } from "lucide-react";
-import { getCurrentUser, hasProgramAccess } from "@/lib/auth";
-import { getAcademicTree, getExamCatalog } from "@/lib/catalog";
+import { redirect } from "next/navigation";
+import { ChevronRight, FolderOpen, GraduationCap, Lock } from "lucide-react";
+import { getCurrentUser, type CurrentUser } from "@/lib/auth";
+import { getAcademicTree, getExamCatalog, type AcademicDepartment } from "@/lib/catalog";
+import { scopedDepartments, levelsForDepartment } from "@/lib/staff-scope";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
-  STUDY_LEVELS,
   departmentSlug,
   filiereSlug,
   findBySlug,
@@ -27,7 +28,7 @@ export default async function SubjectsPage({
 }: {
   searchParams: SearchParams;
 }) {
-  let user = null;
+  let user: CurrentUser | null = null;
   let allSubjects: Awaited<ReturnType<typeof getExamCatalog>> = [];
   let tree: Awaited<ReturnType<typeof getAcademicTree>> = [];
   let catalogueUnavailable = false;
@@ -41,11 +42,16 @@ export default async function SubjectsPage({
     catalogueUnavailable = true;
   }
 
+  if (user?.role === "student") {
+    redirect(user.programId && user.level ? "/espace" : "/compte");
+  }
+
+  const visibleTree = scopeTree(tree, user);
   const { locale, dict } = getI18n();
   const t = dict.catalog;
-  const departments = tree.map((item) => item.name);
+  const departments = visibleTree.map((item) => item.name);
   const selectedDepartment = findBySlug(departments, searchParams.departement);
-  const structure = tree.find((item) => item.name === selectedDepartment);
+  const structure = visibleTree.find((item) => item.name === selectedDepartment);
 
   const inDepartment = selectedDepartment
     ? allSubjects.filter((s) => s.department === selectedDepartment)
@@ -56,30 +62,24 @@ export default async function SubjectsPage({
   const inFiliere = selectedFiliere
     ? inDepartment.filter((s) => s.faculty === selectedFiliere)
     : [];
+  const levelChoices = levelsForDepartment(user, structure?.id, structure?.programs.find((program) => program.name === selectedFiliere)?.id);
   const selectedLevel =
-    searchParams.niveau && isStudyLevel(searchParams.niveau) ? searchParams.niveau : undefined;
+    searchParams.niveau && isStudyLevel(searchParams.niveau) && levelChoices.includes(searchParams.niveau)
+      ? searchParams.niveau
+      : undefined;
 
   const levelSubjects = selectedLevel
     ? inFiliere.filter((s) => s.level === selectedLevel)
     : [];
-  const selectedProgram = structure?.programs.find((program) => program.name === selectedFiliere);
-  const isSubscribed = selectedProgram ? hasProgramAccess(user, selectedProgram.id) : false;
   const corrections = new Map<string, { body: string | null }>();
-  const purchased = new Set<string>();
   if (user && levelSubjects.length > 0) {
     const supabase = createSupabaseServerClient();
-    const [{ data: correctionRows }, { data: purchaseRows }] = await Promise.all([
-      supabase.from("corrections").select("exam_id, body"),
-      supabase.from("one_time_purchases").select("exam_id").eq("profile_id", user.id),
-    ]);
+    const { data: correctionRows } = await supabase.from("corrections").select("exam_id, body");
     for (const row of correctionRows ?? []) corrections.set(row.exam_id as string, { body: row.body });
-    for (const row of purchaseRows ?? []) purchased.add(row.exam_id as string);
   }
   const visibleSubjects = levelSubjects.map((subject) => {
     const correction = corrections.get(subject.id);
-    const canAccess =
-      !!user &&
-      (user.role !== "student" || subject.isFree || isSubscribed || purchased.has(subject.id) || !!correction);
+    const canAccess = !!user;
     return { ...subject, canAccess, content: canAccess ? correction?.body ?? null : null };
   });
 
@@ -103,7 +103,7 @@ export default async function SubjectsPage({
   return (
     <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
       <div>
-        <h1 className="text-3xl font-bold">
+        <h1 className="text-3xl font-bold tracking-tight text-brand-900 sm:text-4xl">
           {!selectedDepartment
             ? t.chooseFaculty
             : !selectedFiliere
@@ -143,18 +143,23 @@ export default async function SubjectsPage({
       {!selectedDepartment && (
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {departments.map((department) => {
-            const filiereCount = tree.find((item) => item.name === department)?.programs.length ?? 0;
+            const filiereCount = visibleTree.find((item) => item.name === department)?.programs.length ?? 0;
             return (
               <Link
                 key={department}
                 href={`/sujets?departement=${departmentSlug(department)}`}
-                className="card group transition hover:border-brand-300 hover:shadow-md"
+                className="card group flex items-center gap-4 transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-md"
               >
-                <FolderOpen className="h-8 w-8 text-brand-600" />
-                <h2 className="mt-3 font-semibold group-hover:text-brand-700">{localizeName(department, locale)}</h2>
-                <p className="mt-1 text-sm text-slate-500">
-                  {t.filiereCount(filiereCount)}
-                </p>
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-brand-50 text-brand-700">
+                  <FolderOpen className="h-6 w-6" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <h2 className="font-semibold text-brand-900 group-hover:text-brand-700">{localizeName(department, locale)}</h2>
+                  <p className="mt-1 text-sm text-slate-500">
+                    {t.filiereCount(filiereCount)}
+                  </p>
+                </span>
+                <ChevronRight className="h-5 w-5 shrink-0 text-brand-300 rtl:rotate-180" />
               </Link>
             );
           })}
@@ -167,11 +172,16 @@ export default async function SubjectsPage({
             <Link
               key={filiere}
               href={`/sujets?departement=${departmentSlug(selectedDepartment)}&filiere=${filiereSlug(filiere)}`}
-              className="card group transition hover:border-brand-300 hover:shadow-md"
+              className="card group flex items-center gap-4 transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-md"
             >
-              <GraduationCap className="h-8 w-8 text-brand-600" />
-              <h2 className="mt-3 font-semibold group-hover:text-brand-700">{localizeName(filiere, locale)}</h2>
-              <p className="mt-1 text-sm text-slate-500">{STUDY_LEVELS.join(" · ")}</p>
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-brand-50 text-brand-700">
+                <GraduationCap className="h-6 w-6" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <h2 className="font-semibold text-brand-900 group-hover:text-brand-700">{localizeName(filiere, locale)}</h2>
+                <p className="mt-1 text-sm text-slate-500">{levelChoices.join(" · ")}</p>
+              </span>
+              <ChevronRight className="h-5 w-5 shrink-0 text-brand-300 rtl:rotate-180" />
             </Link>
           ))}
         </div>
@@ -179,13 +189,13 @@ export default async function SubjectsPage({
 
       {selectedDepartment && selectedFiliere && !selectedLevel && (
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-          {STUDY_LEVELS.map((level) => (
+          {levelChoices.map((level) => (
             <Link
               key={level}
               href={`/sujets?departement=${departmentSlug(selectedDepartment)}&filiere=${filiereSlug(selectedFiliere)}&niveau=${level}`}
-              className="card group text-center transition hover:border-brand-300 hover:shadow-md"
+              className="card group text-center transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-md"
             >
-              <p className="text-2xl font-bold text-brand-700">{level}</p>
+              <p className="text-3xl font-bold tracking-tight text-brand-800">{level}</p>
               <p className="mt-2 text-sm text-slate-500">{t.corrected}</p>
             </Link>
           ))}
@@ -218,31 +228,34 @@ export default async function SubjectsPage({
       {selectedDepartment && selectedFiliere && selectedLevel && user && (
         <div className="mx-auto mt-8 max-w-4xl space-y-8">
           {visibleSubjects.map((subject) => (
-            <article key={subject.id} className="card">
-              <div className="flex flex-wrap gap-2 text-xs font-medium">
-                <span className="rounded-full bg-brand-100 px-2.5 py-0.5 text-brand-700">
-                  {formatLevel(subject.level)}
-                </span>
-                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-slate-600">
-                  {subject.examType}
-                </span>
-                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-slate-600">
-                  {t.session(subject.year)}
-                </span>
+            <article key={subject.id} className="card overflow-hidden p-0">
+              <div className="p-6">
+                <div className="flex flex-wrap gap-2 text-xs font-medium">
+                  <span className="rounded-full bg-brand-100 px-2.5 py-0.5 text-brand-700">
+                    {formatLevel(subject.level)}
+                  </span>
+                  <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-slate-600">
+                    {subject.examType}
+                  </span>
+                  <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-slate-600">
+                    {t.session(subject.year)}
+                  </span>
+                </div>
+                <h2 className="mt-3 text-xl font-semibold text-brand-900">
+                  <Link href={`/sujets/${subject.slug}`} className="hover:text-brand-700">
+                    {subject.title}
+                  </Link>
+                </h2>
+                {subject.description && (
+                  <p className="mt-2 text-sm text-slate-600">{subject.description}</p>
+                )}
               </div>
-              <h2 className="mt-3 text-xl font-semibold">
-                <Link href={`/sujets/${subject.slug}`} className="hover:text-brand-700">
-                  {subject.title}
-                </Link>
-              </h2>
-              {subject.description && (
-                <p className="mt-2 text-sm text-slate-600">{subject.description}</p>
-              )}
-              <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-6">
+              <div className="border-t border-brand-100 bg-brand-50/70 px-6 py-5">
                 {subject.canAccess ? (
                   <SubjectCorrection content={subject.content} fileUrl={null} />
                 ) : (
-                  <Link href={`/sujets/${subject.slug}`} className="btn-secondary inline-flex">
+                  <Link href={`/sujets/${subject.slug}`} className="btn-secondary">
+                    <Lock className="me-2 h-4 w-4" />
                     {t.seeMore}
                   </Link>
                 )}
@@ -251,15 +264,7 @@ export default async function SubjectsPage({
           ))}
 
           {visibleSubjects.length === 0 && (
-            <p className="text-center text-slate-500">{t.emptyLevel}</p>
-          )}
-
-          {!isSubscribed && visibleSubjects.length > 0 && (
-            <div className="text-center">
-              <Link href="/tarifs" className="btn-primary inline-flex">
-                {t.seeMore}
-              </Link>
-            </div>
+            <div className="card text-center text-slate-600">{t.emptyLevel}</div>
           )}
         </div>
       )}
@@ -275,4 +280,16 @@ export default async function SubjectsPage({
       )}
     </div>
   );
+}
+
+function scopeTree(tree: AcademicDepartment[], user: CurrentUser | null) {
+  if (!user || user.role === "super_admin") return tree;
+  if (user.role === "admin") return scopedDepartments(tree, user);
+  if (!user.programId) return [];
+  return tree
+    .map((department) => ({
+      ...department,
+      programs: department.programs.filter((program) => program.id === user.programId),
+    }))
+    .filter((department) => department.programs.length > 0);
 }

@@ -41,7 +41,7 @@
   }
 
   .card {
-    @apply rounded-card border border-slate-200 bg-white p-6 shadow-sm;
+    @apply rounded-card border border-brand-100 bg-white p-6 shadow-sm;
   }
 
   .input {
