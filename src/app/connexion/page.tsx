@@ -32,6 +32,11 @@ function LoginForm() {
       <p className="mt-2 text-sm text-slate-600">
         {t.loginLead}
       </p>
+      {searchParams.get("confirmed") === "1" && (
+        <div className="mt-4 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          {t.confirmed}
+        </div>
+      )}
 
       <form action={formAction} className="mt-8 space-y-5">
         {state?.error && (

@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { confirmationRedirect } from "@/lib/app-url";
 import { getCurrentUser, landingPath } from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { rethrowNavigationError } from "@/lib/navigation-error";
@@ -47,16 +48,26 @@ export async function registerAction(formData: FormData) {
     const { data: program } = await supabase.from("programs").select("id").eq("id", programId).maybeSingle();
     if (!program) return { error: "program_required" };
 
+    const emailRedirectTo = confirmationRedirect(next);
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: { full_name: name, program_id: programId, level },
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}${next}`,
+        emailRedirectTo,
       },
     });
     if (error) {
-      if (error.message.toLowerCase().includes("already")) return { error: "exists" };
+      const message = error.message.toLowerCase();
+      if (message.includes("already") || message.includes("registered")) {
+        const { error: resendError } = await supabase.auth.resend({
+          type: "signup",
+          email,
+          options: { emailRedirectTo },
+        });
+        if (!resendError) return { error: "confirm_email" };
+        return { error: "exists" };
+      }
       return { error: "unavailable" };
     }
     if (!data.session) return { error: "confirm_email" };

@@ -76,6 +76,7 @@ export type Dict = {
   auth: {
     loginTitle: string;
     loginLead: string;
+    confirmed: string;
     signupTitle: string;
     signupLead: string;
     email: string;
@@ -391,6 +392,7 @@ const fr: Dict = {
   auth: {
     loginTitle: "Connexion",
     loginLead: "Retrouve tes épreuves, classées par matière.",
+    confirmed: "Adresse confirmée. Tu peux te connecter.",
     signupTitle: "Créer un compte",
     signupLead: "Choisis ta faculté ou ton institut, ta filière et ton niveau.",
     email: "Email",
@@ -735,6 +737,7 @@ const en: Dict = {
   auth: {
     loginTitle: "Log in",
     loginLead: "Find your papers, organised by subject.",
+    confirmed: "Email confirmed. You can sign in.",
     signupTitle: "Create an account",
     signupLead: "Choose your faculty or institute, your programme and your year.",
     email: "Email",
@@ -1078,6 +1081,7 @@ const ar: Dict = {
   auth: {
     loginTitle: "دخول",
     loginLead: "اعثر على اختباراتك، مرتبة حسب المادة.",
+    confirmed: "تم تأكيد البريد. يمكنك تسجيل الدخول.",
     signupTitle: "إنشاء حساب",
     signupLead: "اختر كليتك أو معهدك، وشعبتك ومستواك.",
     email: "البريد الإلكتروني",
