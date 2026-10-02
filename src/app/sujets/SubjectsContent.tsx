@@ -1,10 +1,9 @@
 import Link from "next/link";
 import { ChevronRight, FolderOpen, GraduationCap } from "lucide-react";
-import { prisma } from "@/lib/prisma";
-import { getCurrentUser, hasActiveSubscription } from "@/lib/auth";
-import { subjectsForVisitor } from "@/lib/access";
+import { getCurrentUser, hasProgramAccess } from "@/lib/auth";
+import { getAcademicTree, getExamCatalog } from "@/lib/catalog";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
-  CATALOG,
   STUDY_LEVELS,
   departmentSlug,
   filiereSlug,
@@ -29,16 +28,14 @@ export default async function SubjectsPage({
   searchParams: SearchParams;
 }) {
   let user = null;
-  let isSubscribed = false;
-  let allSubjects: Awaited<ReturnType<typeof prisma.subject.findMany>> = [];
+  let allSubjects: Awaited<ReturnType<typeof getExamCatalog>> = [];
+  let tree: Awaited<ReturnType<typeof getAcademicTree>> = [];
   let catalogueUnavailable = false;
 
   try {
     user = await getCurrentUser();
-    isSubscribed = user ? await hasActiveSubscription(user.id) : false;
-    allSubjects = await prisma.subject.findMany({
-      orderBy: [{ department: "asc" }, { faculty: "asc" }, { level: "asc" }, { title: "asc" }],
-    });
+    tree = await getAcademicTree();
+    allSubjects = await getExamCatalog();
   } catch (error) {
     rethrowNavigationError(error);
     catalogueUnavailable = true;
@@ -46,14 +43,14 @@ export default async function SubjectsPage({
 
   const { locale, dict } = getI18n();
   const t = dict.catalog;
-  const departments = CATALOG.map((item) => item.name);
+  const departments = tree.map((item) => item.name);
   const selectedDepartment = findBySlug(departments, searchParams.departement);
-  const structure = CATALOG.find((item) => item.name === selectedDepartment);
+  const structure = tree.find((item) => item.name === selectedDepartment);
 
   const inDepartment = selectedDepartment
     ? allSubjects.filter((s) => s.department === selectedDepartment)
     : [];
-  const filieres = structure ? [...structure.filieres] : [];
+  const filieres = structure ? structure.programs.map((program) => program.name) : [];
   const selectedFiliere = findBySlug(filieres, searchParams.filiere);
 
   const inFiliere = selectedFiliere
@@ -65,7 +62,26 @@ export default async function SubjectsPage({
   const levelSubjects = selectedLevel
     ? inFiliere.filter((s) => s.level === selectedLevel)
     : [];
-  const visibleSubjects = subjectsForVisitor(levelSubjects, isSubscribed);
+  const selectedProgram = structure?.programs.find((program) => program.name === selectedFiliere);
+  const isSubscribed = selectedProgram ? hasProgramAccess(user, selectedProgram.id) : false;
+  const corrections = new Map<string, { body: string | null }>();
+  const purchased = new Set<string>();
+  if (user && levelSubjects.length > 0) {
+    const supabase = createSupabaseServerClient();
+    const [{ data: correctionRows }, { data: purchaseRows }] = await Promise.all([
+      supabase.from("corrections").select("exam_id, body"),
+      supabase.from("one_time_purchases").select("exam_id").eq("profile_id", user.id),
+    ]);
+    for (const row of correctionRows ?? []) corrections.set(row.exam_id as string, { body: row.body });
+    for (const row of purchaseRows ?? []) purchased.add(row.exam_id as string);
+  }
+  const visibleSubjects = levelSubjects.map((subject) => {
+    const correction = corrections.get(subject.id);
+    const canAccess =
+      !!user &&
+      (user.role !== "student" || subject.isFree || isSubscribed || purchased.has(subject.id) || !!correction);
+    return { ...subject, canAccess, content: canAccess ? correction?.body ?? null : null };
+  });
 
   const crumbs = [
     { href: "/sujets", label: t.crumbs },
@@ -127,7 +143,7 @@ export default async function SubjectsPage({
       {!selectedDepartment && (
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {departments.map((department) => {
-            const filiereCount = CATALOG.find((item) => item.name === department)?.filieres.length ?? 0;
+            const filiereCount = tree.find((item) => item.name === department)?.programs.length ?? 0;
             return (
               <Link
                 key={department}
@@ -155,7 +171,7 @@ export default async function SubjectsPage({
             >
               <GraduationCap className="h-8 w-8 text-brand-600" />
               <h2 className="mt-3 font-semibold group-hover:text-brand-700">{localizeName(filiere, locale)}</h2>
-              <p className="mt-1 text-sm text-slate-500">L1 · L2 · L3</p>
+              <p className="mt-1 text-sm text-slate-500">{STUDY_LEVELS.join(" · ")}</p>
             </Link>
           ))}
         </div>
@@ -223,7 +239,13 @@ export default async function SubjectsPage({
                 <p className="mt-2 text-sm text-slate-600">{subject.description}</p>
               )}
               <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-6">
-                <SubjectCorrection content={subject.content} fileUrl={subject.fileUrl} />
+                {subject.canAccess ? (
+                  <SubjectCorrection content={subject.content} fileUrl={null} />
+                ) : (
+                  <Link href={`/sujets/${subject.slug}`} className="btn-secondary inline-flex">
+                    {t.seeMore}
+                  </Link>
+                )}
               </div>
             </article>
           ))}

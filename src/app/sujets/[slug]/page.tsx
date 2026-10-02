@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Calendar, Building2 } from "lucide-react";
-import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
-import { canAccessSubject } from "@/lib/access";
+import { canAccessExam } from "@/lib/access";
+import { getCorrection, getExamBySlug, signedFileUrl } from "@/lib/catalog";
+import { createSupabasePublicClient } from "@/lib/supabase/server";
 import { departmentSlug, filiereSlug, formatLevel } from "@/lib/taxonomy";
 import { formatDate } from "@/lib/utils";
 import { SubjectCorrection } from "@/components/SubjectCorrection";
@@ -19,9 +20,7 @@ export default async function SubjectDetailPage({
 }) {
   let subject;
   try {
-    subject = await prisma.subject.findUnique({
-      where: { slug: params.slug },
-    });
+    subject = await getExamBySlug(params.slug);
   } catch (error) {
     rethrowNavigationError(error);
     const { dict } = getI18n();
@@ -35,10 +34,8 @@ export default async function SubjectDetailPage({
   if (!subject) notFound();
 
   try {
-    await prisma.subject.update({
-      where: { id: subject.id },
-      data: { views: { increment: 1 } },
-    });
+    const supabase = createSupabasePublicClient();
+    await supabase.rpc("register_exam_view", { exam_slug: subject.slug });
   } catch (error) {
     rethrowNavigationError(error);
   }
@@ -46,7 +43,9 @@ export default async function SubjectDetailPage({
   const { locale, dict } = getI18n();
   const t = dict.subject;
   const user = await getCurrentUser();
-  const canAccess = await canAccessSubject(subject, user?.id ?? null);
+  const canAccess = await canAccessExam(subject.id, user?.id ?? null);
+  const correction = canAccess ? await getCorrection(subject.id) : null;
+  const fileUrl = canAccess ? await signedFileUrl(subject.filePath ?? correction?.file_path ?? null) : null;
   const backHref = `/sujets?departement=${departmentSlug(subject.department)}&filiere=${filiereSlug(subject.faculty)}&niveau=${subject.level}`;
 
   return (
@@ -92,7 +91,7 @@ export default async function SubjectDetailPage({
 
         <div className="mt-8 rounded-xl border border-slate-200 bg-slate-50 p-6">
           {canAccess ? (
-            <SubjectCorrection content={subject.content} fileUrl={subject.fileUrl} />
+            <SubjectCorrection content={correction?.body} fileUrl={fileUrl} />
           ) : !user ? (
             <div className="text-center">
               <h2 className="text-xl font-semibold">{t.createTitle}</h2>
@@ -115,7 +114,7 @@ export default async function SubjectDetailPage({
               </div>
             </div>
           ) : (
-            <Paywall loggedIn />
+            <Paywall loggedIn examId={subject.id} />
           )}
         </div>
 

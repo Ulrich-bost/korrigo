@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import SubjectsPage from "./SubjectsContent";
 
+export const revalidate = 3600;
+
 export default function Page({
   searchParams,
 }: {

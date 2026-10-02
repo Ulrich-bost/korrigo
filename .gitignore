@@ -38,6 +38,9 @@ next-env.d.ts
 /prisma/dev.db
 /prisma/dev.db-journal
 
+# supabase CLI
+/supabase/.temp
+
 # uploads
 /public/uploads/*
 !/public/uploads/.gitkeep

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyWebhookSignature } from "@/lib/chargily";
 import { fulfillChargilyPayment } from "@/lib/fulfill-payment";
-import { prisma } from "@/lib/prisma";
 
 export async function POST(req: NextRequest) {
   const rawBody = await req.text();
@@ -31,17 +30,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ received: true, ignored: true });
   }
 
-  const payment = paymentId
-    ? await prisma.payment.findUnique({ where: { id: paymentId } })
-    : await prisma.payment.findUnique({ where: { checkoutId: checkoutId! } });
-
-  if (!payment) {
-    return NextResponse.json({ received: true, ignored: true });
-  }
-
   await fulfillChargilyPayment({
-    paymentId: payment.id,
-    checkoutId: checkoutId ?? payment.checkoutId ?? undefined,
+    paymentId,
+    checkoutId,
   });
 
   return NextResponse.json({ received: true });

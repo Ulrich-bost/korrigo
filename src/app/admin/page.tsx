@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
+import { getAcademicTree, getExamCatalog } from "@/lib/catalog";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { AdminSubjectForm } from "@/components/AdminSubjectForm";
-import { CATALOG } from "@/lib/taxonomy";
 import { getI18n } from "@/i18n/get-i18n";
 import { localizeName } from "@/i18n/catalog-labels";
 import { formatDate } from "@/lib/utils";
@@ -17,62 +17,81 @@ export default async function AdminPage({
   const { locale, dict } = getI18n();
   const t = dict.admin;
   const user = await getCurrentUser();
-  if (!user || user.role !== "ADMIN") redirect("/");
+  if (!user || (user.role !== "admin" && user.role !== "super_admin")) redirect("/");
 
   const now = new Date();
-  const [subjects, subjectCount, userCount, activeAccess, paymentCounts, collected, accounts, payments] =
-    await Promise.all([
-      prisma.subject.findMany({
-        orderBy: { createdAt: "desc" },
-        take: 20,
-      }),
-      prisma.subject.count(),
-      prisma.user.count(),
-      prisma.subscription.count({
-        where: {
-          status: "ACTIVE",
-          OR: [{ currentPeriodEnd: null }, { currentPeriodEnd: { gt: now } }],
-        },
-      }),
-      prisma.payment.groupBy({
-        by: ["status"],
-        _count: true,
-      }),
-      prisma.payment.groupBy({
-        by: ["currency"],
-        where: { status: "SUCCESSFUL" },
-        _sum: { amount: true },
-      }),
-      prisma.user.findMany({
-        orderBy: { createdAt: "desc" },
-        take: 8,
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          role: true,
-          createdAt: true,
-          subscription: { select: { status: true, currentPeriodEnd: true } },
-        },
-      }),
-      prisma.payment.findMany({
-        orderBy: { createdAt: "desc" },
-        take: 8,
-        include: { user: { select: { name: true, email: true } } },
-      }),
-    ]);
+  const isSuper = user.role === "super_admin";
+  const supabase = createSupabaseServerClient();
+  const [tree, exams, profileCount, subscriptionRows, paymentRows, accountRows] = await Promise.all([
+    getAcademicTree(),
+    getExamCatalog(),
+    isSuper
+      ? supabase.from("profiles").select("id", { count: "exact", head: true })
+      : Promise.resolve({ count: 0 }),
+    isSuper
+      ? supabase.from("subscriptions").select("status, current_period_end")
+      : Promise.resolve({ data: [] as { status: string; current_period_end: string | null }[] }),
+    isSuper
+      ? supabase.from("payments").select("status, amount, currency, operator, created_at, profiles(full_name, email)").order("created_at", { ascending: false })
+      : Promise.resolve({ data: [] as PaymentRow[] }),
+    isSuper
+      ? supabase.from("profiles").select("id, full_name, email, role, created_at, subscriptions(status, current_period_end)").order("created_at", { ascending: false }).limit(8)
+      : Promise.resolve({ data: [] as AccountRow[] }),
+  ]);
 
-  const countByStatus = Object.fromEntries(paymentCounts.map((row) => [row.status, row._count]));
+  const subjects = [...exams].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 20);
+  const subjectCount = exams.length;
+  const userCount = profileCount.count ?? 0;
+  const activeAccess = (subscriptionRows.data ?? []).filter((row) => {
+    return row.status === "active" && (!row.current_period_end || new Date(row.current_period_end) > now);
+  }).length;
+  const payments = ((paymentRows.data ?? []) as PaymentRow[]).map((payment) => {
+    const profile = Array.isArray(payment.profiles) ? payment.profiles[0] : payment.profiles;
+    return {
+      id: payment.id,
+      createdAt: payment.created_at,
+      amount: payment.amount,
+      currency: payment.currency,
+      operator: payment.operator,
+      status: payment.status.toUpperCase(),
+      user: { name: profile?.full_name ?? "", email: profile?.email ?? "" },
+    };
+  });
+  const paymentCounts = payments.reduce<Record<string, number>>((acc, payment) => {
+    acc[payment.status] = (acc[payment.status] ?? 0) + 1;
+    return acc;
+  }, {});
+  const collectedMap = new Map<string, number>();
+  for (const payment of payments) {
+    if (payment.status !== "SUCCESSFUL") continue;
+    collectedMap.set(payment.currency, (collectedMap.get(payment.currency) ?? 0) + payment.amount);
+  }
+  const collected = [...collectedMap.entries()].map(([currency, amount]) => ({ currency, amount }));
+  const accounts = ((accountRows.data ?? []) as AccountRow[]).map((account) => {
+    const subscription = Array.isArray(account.subscriptions) ? account.subscriptions[0] : account.subscriptions;
+    return {
+      id: account.id,
+      name: account.full_name,
+      email: account.email,
+      role: account.role,
+      createdAt: account.created_at,
+      subscription: subscription
+        ? { status: subscription.status, currentPeriodEnd: subscription.current_period_end }
+        : null,
+    };
+  });
+
+  const countByStatus = paymentCounts;
   const collectedLabel = collected
-    .filter((row) => (row._sum.amount ?? 0) > 0)
-    .map((row) => formatMoney(row._sum.amount ?? 0, row.currency))
+    .filter((row) => row.amount > 0)
+    .map((row) => formatMoney(row.amount, row.currency))
     .join(" · ");
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
       <h1 className="text-3xl font-bold">{t.title}</h1>
       <p className="mt-2 text-slate-600">
-        {t.summary(subjectCount, CATALOG.length, userCount)}
+        {t.summary(subjectCount, tree.length, userCount)}
       </p>
 
       <section className="mt-8">
@@ -118,13 +137,15 @@ export default async function AdminPage({
                 {accounts.map((account) => {
                   const sub = account.subscription;
                   const active =
-                    sub?.status === "ACTIVE" &&
-                    (!sub.currentPeriodEnd || sub.currentPeriodEnd > now);
+                    sub?.status === "active" &&
+                    (!sub.currentPeriodEnd || new Date(sub.currentPeriodEnd) > now);
                   return (
                     <tr key={account.id}>
                       <td className="px-4 py-3">{account.name}</td>
                       <td className="px-4 py-3">{account.email}</td>
-                      <td className="px-4 py-3">{account.role === "ADMIN" ? t.roleAdmin : t.roleUser}</td>
+                      <td className="px-4 py-3">
+                        {account.role === "super_admin" ? t.roleSuper : account.role === "admin" ? t.roleAdmin : t.roleUser}
+                      </td>
                       <td className="px-4 py-3">{formatDate(account.createdAt, locale)}</td>
                       <td className="px-4 py-3">{active ? t.accessActive : t.accessNone}</td>
                     </tr>
@@ -178,7 +199,7 @@ export default async function AdminPage({
       )}
 
       <div className="mt-10 max-w-xl">
-        <AdminSubjectForm departments={CATALOG.map((item) => item.name)} />
+        <AdminSubjectForm departments={tree.map((item) => item.name)} />
       </div>
 
       <section className="mt-12">
@@ -205,7 +226,7 @@ export default async function AdminPage({
                   <td className="px-4 py-3">{localizeName(s.department, locale)}</td>
                   <td className="px-4 py-3">{localizeName(s.faculty, locale)}</td>
                   <td className="px-4 py-3">{s.level}</td>
-                  <td className="px-4 py-3">{s.isPremium ? t.no : t.yes}</td>
+                  <td className="px-4 py-3">{s.isFree ? t.yes : t.no}</td>
                 </tr>
               ))}
             </tbody>
@@ -214,6 +235,28 @@ export default async function AdminPage({
       </section>
     </div>
   );
+}
+
+interface PaymentRow {
+  id: string;
+  status: string;
+  amount: number;
+  currency: string;
+  operator: string | null;
+  created_at: string;
+  profiles: { full_name: string; email: string } | { full_name: string; email: string }[] | null;
+}
+
+interface AccountRow {
+  id: string;
+  full_name: string;
+  email: string;
+  role: string;
+  created_at: string;
+  subscriptions:
+    | { status: string; current_period_end: string | null }
+    | { status: string; current_period_end: string | null }[]
+    | null;
 }
 
 function formatMoney(amount: number, currency: string) {

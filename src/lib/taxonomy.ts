@@ -1,6 +1,6 @@
 import { slugify } from "@/lib/utils";
 
-export const STUDY_LEVELS = ["L1", "L2", "L3"] as const;
+export const STUDY_LEVELS = ["L1", "L2", "L3", "M1", "M2"] as const;
 
 export const CATALOG = [
   {

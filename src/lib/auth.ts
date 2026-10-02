@@ -1,91 +1,84 @@
-import { SignJWT, jwtVerify } from "jose";
-import { cookies } from "next/headers";
-import { prisma } from "./prisma";
-import { rethrowNavigationError } from "./navigation-error";
-import type { Role } from "@prisma/client";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { rethrowNavigationError } from "@/lib/navigation-error";
 
-const COOKIE_NAME = "univ-sujets-session";
+export type AppRole = "student" | "admin" | "super_admin";
 
 export interface SessionUser {
   id: string;
   email: string;
   name: string;
-  role: Role;
+  role: AppRole;
 }
 
-function getSecret() {
-  const secret = process.env.AUTH_SECRET;
-  if (!secret) throw new Error("AUTH_SECRET is not set");
-  return new TextEncoder().encode(secret);
+export interface UserSubscription {
+  programId: string;
+  plan: "monthly" | "yearly";
+  status: string;
+  currentPeriodEnd: Date | null;
 }
 
-export async function createSession(user: SessionUser) {
-  const token = await new SignJWT({
-    id: user.id,
-    email: user.email,
-    name: user.name,
-    role: user.role,
-  })
-    .setProtectedHeader({ alg: "HS256" })
-    .setIssuedAt()
-    .setExpirationTime("7d")
-    .sign(getSecret());
-
-  cookies().set(COOKIE_NAME, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 7,
-  });
+export interface CurrentUser extends SessionUser {
+  programId: string | null;
+  level: string | null;
+  objectives: string | null;
+  subscriptions: UserSubscription[];
 }
 
-export async function destroySession() {
-  cookies().delete(COOKIE_NAME);
+function isActive(sub: UserSubscription) {
+  return sub.status === "active" && (!sub.currentPeriodEnd || sub.currentPeriodEnd > new Date());
+}
+
+export async function getCurrentUser(): Promise<CurrentUser | null> {
+  try {
+    const supabase = createSupabaseServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const [{ data: profile }, { data: subscriptions }] = await Promise.all([
+      supabase
+        .from("profiles")
+        .select("full_name, role, program_id, level, objectives")
+        .eq("id", user.id)
+        .maybeSingle(),
+      supabase
+        .from("subscriptions")
+        .select("program_id, plan, status, current_period_end")
+        .eq("profile_id", user.id),
+    ]);
+
+    return {
+      id: user.id,
+      email: user.email ?? "",
+      name: profile?.full_name || user.email || "",
+      role: (profile?.role as AppRole) ?? "student",
+      programId: profile?.program_id ?? null,
+      level: profile?.level ?? null,
+      objectives: profile?.objectives ?? null,
+      subscriptions: (subscriptions ?? []).map((row) => ({
+        programId: row.program_id as string,
+        plan: row.plan as "monthly" | "yearly",
+        status: row.status as string,
+        currentPeriodEnd: row.current_period_end ? new Date(row.current_period_end) : null,
+      })),
+    };
+  } catch (error) {
+    rethrowNavigationError(error);
+    return null;
+  }
 }
 
 export async function getSession(): Promise<SessionUser | null> {
-  const token = cookies().get(COOKIE_NAME)?.value;
-  if (!token) return null;
-
-  try {
-    const { payload } = await jwtVerify(token, getSecret());
-    return {
-      id: payload.id as string,
-      email: payload.email as string,
-      name: payload.name as string,
-      role: payload.role as Role,
-    };
-  } catch {
-    return null;
-  }
+  const user = await getCurrentUser();
+  if (!user) return null;
+  return { id: user.id, email: user.email, name: user.name, role: user.role };
 }
 
-export async function getCurrentUser() {
-  const session = await getSession();
-  if (!session) return null;
-
-  try {
-    return await prisma.user.findUnique({
-      where: { id: session.id },
-      include: { subscription: true },
-    });
-  } catch (error) {
-    rethrowNavigationError(error);
-    return null;
-  }
-}
-
-export async function hasActiveSubscription(userId: string): Promise<boolean> {
-  try {
-    const sub = await prisma.subscription.findUnique({ where: { userId } });
-    if (!sub || sub.status !== "ACTIVE") return false;
-    if (sub.currentPeriodEnd && sub.currentPeriodEnd < new Date()) return false;
-    return true;
-  } catch (error) {
-    rethrowNavigationError(error);
-    return false;
-  }
+export function hasProgramAccess(user: CurrentUser | null, programId: string) {
+  if (!user) return false;
+  if (user.role === "super_admin") return true;
+  return user.subscriptions.some((sub) => sub.programId === programId && isActive(sub));
 }
 
 export async function requireAuth() {
@@ -94,8 +87,8 @@ export async function requireAuth() {
   return user;
 }
 
-export async function requireAdmin() {
+export async function requireStaff() {
   const user = await requireAuth();
-  if (user.role !== "ADMIN") throw new Error("FORBIDDEN");
+  if (user.role !== "admin" && user.role !== "super_admin") throw new Error("FORBIDDEN");
   return user;
 }

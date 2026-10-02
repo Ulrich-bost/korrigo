@@ -10,10 +10,11 @@ import type { Dict } from "@/i18n/messages";
 interface SubscribeButtonProps {
   rail: PayRail;
   loggedIn: boolean;
+  examId?: string;
   className?: string;
 }
 
-export function SubscribeButton({ rail, loggedIn, className }: SubscribeButtonProps) {
+export function SubscribeButton({ rail, loggedIn, examId, className }: SubscribeButtonProps) {
   const { dict } = useI18n();
   const [pending, startTransition] = useTransition();
   const label = rail === "ccp" ? dict.pay.ccp : dict.pay.card;
@@ -33,7 +34,7 @@ export function SubscribeButton({ rail, loggedIn, className }: SubscribeButtonPr
             window.location.href = "/connexion?redirect=/tarifs";
             return;
           }
-          const result = await createCheckoutSession(rail);
+          const result = await createCheckoutSession(rail, examId);
           if (result?.error) alert(errorText(result.error));
         })
       }

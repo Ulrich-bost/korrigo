@@ -34,7 +34,7 @@ export function Navbar({ session, locale }: NavbarProps) {
               <Link href="/compte" className="text-sm font-medium text-slate-600 hover:text-brand-600">
                 {session.name}
               </Link>
-              {session.role === "ADMIN" && (
+              {(session.role === "admin" || session.role === "super_admin") && (
                 <Link href="/admin" className="text-sm font-medium text-amber-600 hover:text-amber-700">
                   {t.admin}
                 </Link>

@@ -99,6 +99,8 @@ export type Dict = {
     ccp_unconfigured: string;
     card_unconfigured: string;
     payment: string;
+    confirm_email: string;
+    program_required: string;
   };
   account: {
     title: string;
@@ -112,6 +114,15 @@ export type Dict = {
     pickFaculty: string;
     chooseFaculty: string;
     logout: string;
+    program: string;
+    objectives: string;
+    saveProfile: string;
+    scheduleTitle: string;
+    scheduleLead: string;
+    examLabel: string;
+    examDate: string;
+    addDate: string;
+    reminder: (date: string) => string;
   };
   pricing: {
     title: string;
@@ -186,6 +197,7 @@ export type Dict = {
     colMethod: string;
     colDate: string;
     roleAdmin: string;
+    roleSuper: string;
     roleUser: string;
     accessActive: string;
     accessNone: string;
@@ -310,6 +322,8 @@ const fr: Dict = {
     ccp_unconfigured: "Le CCP n'est pas encore configuré.",
     card_unconfigured: "Le paiement par carte n'est pas encore configuré.",
     payment: "Impossible de lancer le paiement.",
+    confirm_email: "Confirmez votre adresse e-mail pour activer le compte.",
+    program_required: "Choisissez d'abord votre filière dans votre compte.",
   },
   account: {
     title: "Mon compte",
@@ -317,21 +331,30 @@ const fr: Dict = {
     pending: "Paiement en cours de confirmation. Actualisez dans quelques secondes si besoin.",
     access: "Accès",
     mySubjects: "Mes sujets",
-    fullAccess: "Accès complet — paiement unique",
+    fullAccess: "Abonnement actif sur votre filière",
     until: (date) => `Accès jusqu'au ${date}`,
-    noEnd: "Sans date de fin et sans renouvellement.",
-    pickFaculty: "Choisissez une faculté et une filière pour consulter les sujets corrigés.",
+    noEnd: "Accès à cette filière jusqu'à la fin de la période.",
+    pickFaculty: "Choisissez votre filière et votre niveau. L'abonnement annuel ouvre ensuite toute cette filière.",
     chooseFaculty: "Choisir une faculté",
     logout: "Se déconnecter",
+    program: "Filière",
+    objectives: "Objectifs",
+    saveProfile: "Enregistrer le profil",
+    scheduleTitle: "Calendrier d'examens",
+    scheduleLead: "Les rappels J-14 et J-7 s'affichent ici. L'envoi automatique n'est pas encore branché.",
+    examLabel: "Intitulé",
+    examDate: "Date de l'examen",
+    addDate: "Ajouter la date",
+    reminder: (date) => `Rappel le ${date}`,
   },
   pricing: {
     title: "Voir plus de sujets",
     lead: (price) =>
-      `Un paiement unique de ${price} donne accès à tous les sujets et corrigés. CCP pour l'Algérie, ou carte d'une banque d'Afrique subsaharienne.`,
+      `Un abonnement annuel de ${price} ouvre toute votre filière. Un achat à l'acte débloque un seul sujet. CCP pour l'Algérie, ou carte d'une banque d'Afrique subsaharienne.`,
     canceled: "Paiement annulé. Vous pouvez réessayer quand vous voulez.",
-    already: "Vous avez déjà accès à tout le catalogue. Consultez",
+    already: "Votre abonnement de filière est actif. Consultez",
     account: "votre compte",
-    oneTime: "Paiement unique",
+    oneTime: "Abonnement annuel à la filière",
     ccpNote: (dzd, fcfa) =>
       `CCP via EDAHABIA, Algérie Poste (${dzd}). Carte Visa ou Mastercard d'une banque d'Afrique subsaharienne (${fcfa}), hors Algérie.`,
     faqTitle: "Questions fréquentes",
@@ -358,9 +381,9 @@ const fr: Dict = {
     offerName: "Accès complet",
   },
   paywall: {
-    title: "Bénéficiez de tous les sujets",
+    title: "Débloquer ce sujet",
     lead: (price) =>
-      `Un paiement unique de ${price} donne accès à tous les sujets et corrigés, dans toutes les facultés, filières et niveaux.`,
+      `Un achat de ${price} débloque définitivement ce sujet et son corrigé. L'abonnement annuel, depuis les tarifs, ouvre toute votre filière.`,
     note: (dzd, fcfa) =>
       `CCP (Algérie, ${dzd}) ou carte Visa/Mastercard d'une banque d'Afrique subsaharienne (${fcfa}).`,
   },
@@ -426,6 +449,7 @@ const fr: Dict = {
     colMethod: "Moyen",
     colDate: "Date",
     roleAdmin: "Admin",
+    roleSuper: "Super admin",
     roleUser: "Étudiant",
     accessActive: "Actif",
     accessNone: "Aucun",
@@ -550,6 +574,8 @@ const en: Dict = {
     ccp_unconfigured: "CCP payment is not configured yet.",
     card_unconfigured: "Card payment is not configured yet.",
     payment: "The payment could not be started.",
+    confirm_email: "Confirm your email address to activate the account.",
+    program_required: "Choose your programme in your account first.",
   },
   account: {
     title: "My account",
@@ -557,21 +583,30 @@ const en: Dict = {
     pending: "Payment is being confirmed. Refresh in a few seconds if needed.",
     access: "Access",
     mySubjects: "My papers",
-    fullAccess: "Full access — one-time payment",
+    fullAccess: "Active subscription for your programme",
     until: (date) => `Access until ${date}`,
-    noEnd: "No end date and no renewal.",
-    pickFaculty: "Choose a faculty and a programme to read the corrected papers.",
+    noEnd: "Access to this programme until the period ends.",
+    pickFaculty: "Choose your programme and year. The yearly subscription then opens that whole programme.",
     chooseFaculty: "Choose a faculty",
     logout: "Log out",
+    program: "Programme",
+    objectives: "Goals",
+    saveProfile: "Save profile",
+    scheduleTitle: "Exam calendar",
+    scheduleLead: "The J-14 and J-7 reminders appear here. Automatic sending is not connected yet.",
+    examLabel: "Title",
+    examDate: "Exam date",
+    addDate: "Add date",
+    reminder: (date) => `Reminder on ${date}`,
   },
   pricing: {
     title: "See more papers",
     lead: (price) =>
-      `A one-time payment of ${price} unlocks every paper and correction. CCP for Algeria, or a card from a sub-Saharan African bank.`,
+      `A yearly subscription of ${price} opens your whole programme. A single purchase unlocks one paper. CCP for Algeria, or a card from a sub-Saharan African bank.`,
     canceled: "Payment cancelled. You can try again whenever you want.",
-    already: "You already have access to the full catalogue. Open",
+    already: "Your programme subscription is active. Open",
     account: "your account",
-    oneTime: "One-time payment",
+    oneTime: "Yearly programme subscription",
     ccpNote: (dzd, fcfa) =>
       `CCP via EDAHABIA, Algérie Poste (${dzd}). Visa or Mastercard from a sub-Saharan African bank (${fcfa}), outside Algeria.`,
     faqTitle: "Frequently asked questions",
@@ -598,9 +633,9 @@ const en: Dict = {
     offerName: "Full access",
   },
   paywall: {
-    title: "Get every paper",
+    title: "Unlock this paper",
     lead: (price) =>
-      `A one-time payment of ${price} unlocks every paper and correction, in every faculty, programme and year.`,
+      `A purchase of ${price} unlocks this paper and its correction for good. The yearly subscription, from pricing, opens your whole programme.`,
     note: (dzd, fcfa) => `CCP (Algeria, ${dzd}) or a Visa/Mastercard from a sub-Saharan African bank (${fcfa}).`,
   },
   pay: { ccp: "Pay by CCP", card: "Pay by bank card", pending: "Redirecting to payment..." },
@@ -665,6 +700,7 @@ const en: Dict = {
     colMethod: "Method",
     colDate: "Date",
     roleAdmin: "Admin",
+    roleSuper: "Super admin",
     roleUser: "Student",
     accessActive: "Active",
     accessNone: "None",
@@ -789,6 +825,8 @@ const ar: Dict = {
     ccp_unconfigured: "الدفع عبر CCP غير مهيأ بعد.",
     card_unconfigured: "الدفع بالبطاقة غير مهيأ بعد.",
     payment: "تعذر بدء الدفع.",
+    confirm_email: "أكّد بريدك الإلكتروني لتفعيل الحساب.",
+    program_required: "اختر شعبتك أولا من حسابك.",
   },
   account: {
     title: "حسابي",
@@ -796,21 +834,30 @@ const ar: Dict = {
     pending: "الدفع قيد التأكيد. حدّث الصفحة بعد بضع ثوان إذا لزم الأمر.",
     access: "الوصول",
     mySubjects: "مواضيعي",
-    fullAccess: "وصول كامل — دفع واحد",
+    fullAccess: "اشتراك مفعّل على شعبتك",
     until: (date) => `الوصول حتى ${date}`,
-    noEnd: "دون تاريخ انتهاء ودون تجديد.",
-    pickFaculty: "اختر كلية وشعبة للاطلاع على المواضيع المصححة.",
+    noEnd: "الوصول إلى هذه الشعبة حتى نهاية الفترة.",
+    pickFaculty: "اختر شعبتك ومستواك. الاشتراك السنوي يفتح بعد ذلك كل هذه الشعبة.",
     chooseFaculty: "اختيار كلية",
     logout: "تسجيل الخروج",
+    program: "الشعبة",
+    objectives: "الأهداف",
+    saveProfile: "حفظ الملف",
+    scheduleTitle: "رزنامة الامتحانات",
+    scheduleLead: "تظهر تذكيرات 14 يوما و7 أيام هنا. الإرسال التلقائي غير موصول بعد.",
+    examLabel: "العنوان",
+    examDate: "تاريخ الامتحان",
+    addDate: "إضافة التاريخ",
+    reminder: (date) => `تذكير في ${date}`,
   },
   pricing: {
     title: "عرض المزيد من المواضيع",
     lead: (price) =>
-      `دفع واحد بقيمة ${price} يفتح كل المواضيع والتصحيحات. CCP للجزائر، أو بطاقة بنك من إفريقيا جنوب الصحراء.`,
+      `اشتراك سنوي بقيمة ${price} يفتح كل شعبتك. شراء واحد يفتح موضوعا واحدا. CCP للجزائر، أو بطاقة بنك من إفريقيا جنوب الصحراء.`,
     canceled: "أُلغي الدفع. يمكنك المحاولة متى شئت.",
-    already: "لديك أصلا وصول إلى كل الفهرس. راجع",
+    already: "اشتراك شعبتك مفعّل. راجع",
     account: "حسابك",
-    oneTime: "دفع واحد",
+    oneTime: "اشتراك سنوي في الشعبة",
     ccpNote: (dzd, fcfa) =>
       `CCP عبر الذهبية، بريد الجزائر (${dzd}). بطاقة فيزا أو ماستركارد من بنك في إفريقيا جنوب الصحراء (${fcfa})، خارج الجزائر.`,
     faqTitle: "أسئلة شائعة",
@@ -832,8 +879,8 @@ const ar: Dict = {
     offerName: "وصول كامل",
   },
   paywall: {
-    title: "احصل على كل المواضيع",
-    lead: (price) => `دفع واحد بقيمة ${price} يفتح كل المواضيع والتصحيحات، في كل الكليات والشعب والمستويات.`,
+    title: "فتح هذا الموضوع",
+    lead: (price) => `شراء بقيمة ${price} يفتح هذا الموضوع وتصحيحه نهائيا. الاشتراك السنوي، من صفحة الأسعار، يفتح كل شعبتك.`,
     note: (dzd, fcfa) => `CCP (الجزائر، ${dzd}) أو بطاقة فيزا/ماستركارد من بنك في إفريقيا جنوب الصحراء (${fcfa}).`,
   },
   pay: { ccp: "الدفع عبر CCP", card: "الدفع بالبطاقة", pending: "جار التحويل إلى الدفع..." },
@@ -896,6 +943,7 @@ const ar: Dict = {
     colMethod: "الوسيلة",
     colDate: "التاريخ",
     roleAdmin: "إدارة",
+    roleSuper: "مدير عام",
     roleUser: "طالب",
     accessActive: "مفعّل",
     accessNone: "لا شيء",

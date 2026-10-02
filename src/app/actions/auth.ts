@@ -1,10 +1,8 @@
 "use server";
 
-import bcrypt from "bcryptjs";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
-import { createSession } from "@/lib/auth";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { rethrowNavigationError } from "@/lib/navigation-error";
 
 function safeRedirect(value: FormDataEntryValue | null) {
@@ -35,30 +33,29 @@ export async function registerAction(formData: FormData) {
   }
 
   const { name, email, password } = parsed.data;
+  const next = safeRedirect(formData.get("redirect"));
 
   try {
-    const existing = await prisma.user.findUnique({ where: { email } });
-    if (existing) {
-      return { error: "exists" };
+    const supabase = createSupabaseServerClient();
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { full_name: name },
+        emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}${next}`,
+      },
+    });
+    if (error) {
+      if (error.message.toLowerCase().includes("already")) return { error: "exists" };
+      return { error: "unavailable" };
     }
-
-    const passwordHash = await bcrypt.hash(password, 12);
-    const user = await prisma.user.create({
-      data: { name, email, passwordHash },
-    });
-
-    await createSession({
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
-    });
+    if (!data.session) return { error: "confirm_email" };
   } catch (error) {
     rethrowNavigationError(error);
     return { error: "unavailable" };
   }
 
-  redirect(safeRedirect(formData.get("redirect")));
+  redirect(next);
 }
 
 const loginSchema = z.object({
@@ -79,21 +76,13 @@ export async function loginAction(formData: FormData) {
     return { error: "invalid" };
   }
 
-  const { email, password } = parsed.data;
-
   try {
-    const user = await prisma.user.findUnique({ where: { email } });
-
-    if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
+    const supabase = createSupabaseServerClient();
+    const { error } = await supabase.auth.signInWithPassword(parsed.data);
+    if (error) {
+      if (error.message.toLowerCase().includes("confirm")) return { error: "confirm_email" };
       return { error: "bad_login" };
     }
-
-    await createSession({
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
-    });
   } catch (error) {
     rethrowNavigationError(error);
     return { error: "unavailable" };
@@ -103,7 +92,7 @@ export async function loginAction(formData: FormData) {
 }
 
 export async function logoutAction() {
-  const { destroySession } = await import("@/lib/auth");
-  await destroySession();
+  const supabase = createSupabaseServerClient();
+  await supabase.auth.signOut();
   redirect("/");
 }

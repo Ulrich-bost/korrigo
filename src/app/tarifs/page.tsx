@@ -13,10 +13,12 @@ export default async function PricingPage({
   const { dict } = getI18n();
   const t = dict.pricing;
   const user = await getCurrentUser();
-  const hasSub =
-    user?.subscription?.status === "ACTIVE" &&
-    (!user.subscription.currentPeriodEnd ||
-      user.subscription.currentPeriodEnd > new Date());
+  const hasSub = !!user?.subscriptions.some(
+    (sub) =>
+      sub.status === "active" &&
+      (!user.programId || sub.programId === user.programId) &&
+      (!sub.currentPeriodEnd || sub.currentPeriodEnd > new Date())
+  );
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
