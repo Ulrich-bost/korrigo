@@ -28,7 +28,7 @@ export default async function RootLayout({
   return (
     <html lang={locale} dir={locale === "ar" ? "rtl" : "ltr"}>
       <body
-        className={`${heading.variable} ${body.variable} ${code.variable} ${arabic.variable} ${locale === "ar" ? "font-arabic" : "font-body"} min-h-screen bg-white text-slate-900 antialiased`}
+        className={`${heading.variable} ${body.variable} ${code.variable} ${arabic.variable} ${locale === "ar" ? "font-arabic" : "font-body"} min-h-screen bg-brand-50 text-slate-900 antialiased`}
       >
         <I18nProvider locale={locale}>
           <Navbar session={session} locale={locale} />

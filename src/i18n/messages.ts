@@ -8,6 +8,7 @@ export type Dict = {
     signup: string;
     account: string;
     admin: string;
+    exams: string;
     language: string;
   };
   footer: {
@@ -91,6 +92,7 @@ export type Dict = {
     email: string;
     password: string;
     password_required: string;
+    password_mismatch: string;
     invalid: string;
     exists: string;
     bad_login: string;
@@ -114,15 +116,37 @@ export type Dict = {
     pickFaculty: string;
     chooseFaculty: string;
     logout: string;
+    danger: {
+      zone: string;
+      lead: string;
+      confirm: string;
+      cancel: string;
+    };
+    path: string;
     program: string;
     objectives: string;
     saveProfile: string;
+    nameSaved: string;
+    passwordSaved: string;
+    passwordConfirm: string;
     scheduleTitle: string;
     scheduleLead: string;
     examLabel: string;
     examDate: string;
     addDate: string;
     reminder: (date: string) => string;
+  };
+  space: {
+    hello: (name: string) => string;
+    lead: string;
+    emptyTitle: string;
+    emptyLead: string;
+    emptyCourse: string;
+    papers: (count: number) => string;
+    changeLevel: string;
+    levelHint: string;
+    saveLevel: string;
+    other: string;
   };
   pricing: {
     title: string;
@@ -221,6 +245,7 @@ const fr: Dict = {
     signup: "S'inscrire",
     account: "Mon compte",
     admin: "Admin",
+    exams: "Mes épreuves",
     language: "Langue",
   },
   footer: {
@@ -294,9 +319,9 @@ const fr: Dict = {
   },
   auth: {
     loginTitle: "Connexion",
-    loginLead: "Accédez à votre faculté et votre filière",
+    loginLead: "Retrouve tes épreuves, classées par matière.",
     signupTitle: "Créer un compte",
-    signupLead: "Accédez ensuite à votre faculté et votre filière",
+    signupLead: "Choisis ta faculté ou ton institut, ta filière et ton niveau.",
     email: "Email",
     password: "Mot de passe",
     name: "Nom complet",
@@ -314,6 +339,7 @@ const fr: Dict = {
     email: "Email invalide",
     password: "Mot de passe : min. 8 caractères",
     password_required: "Mot de passe requis",
+    password_mismatch: "Les mots de passe ne correspondent pas.",
     invalid: "Données invalides",
     exists: "Un compte existe déjà avec cet email",
     bad_login: "Email ou mot de passe incorrect",
@@ -337,15 +363,37 @@ const fr: Dict = {
     pickFaculty: "Choisissez votre filière et votre niveau. L'abonnement annuel ouvre ensuite toute cette filière.",
     chooseFaculty: "Choisir une faculté",
     logout: "Se déconnecter",
+    danger: {
+      zone: "Déconnexion",
+      lead: "Vous fermerez votre session sur cet appareil.",
+      confirm: "Confirmer",
+      cancel: "Annuler",
+    },
+    path: "Parcours académique",
     program: "Filière",
     objectives: "Objectifs",
     saveProfile: "Enregistrer le profil",
+    nameSaved: "Nom mis à jour.",
+    passwordSaved: "Mot de passe mis à jour.",
+    passwordConfirm: "Confirmer le mot de passe",
     scheduleTitle: "Calendrier d'examens",
     scheduleLead: "Les rappels J-14 et J-7 s'affichent ici. L'envoi automatique n'est pas encore branché.",
     examLabel: "Intitulé",
     examDate: "Date de l'examen",
     addDate: "Ajouter la date",
     reminder: (date) => `Rappel le ${date}`,
+  },
+  space: {
+    hello: (name) => `Bonjour ${name}`,
+    lead: "Tes épreuves de ce niveau, classées par matière.",
+    emptyTitle: "Pas encore d'épreuve",
+    emptyLead: "Dès qu'une épreuve de ta filière et de ton niveau est ajoutée, elle apparaît ici, rangée par matière.",
+    emptyCourse: "Aucune épreuve pour cette matière.",
+    papers: (count) => (count === 1 ? "1 épreuve" : `${count} épreuves`),
+    changeLevel: "Niveau",
+    levelHint: "Tu pourras passer au niveau supérieur quand tu seras admis.",
+    saveLevel: "Enregistrer le niveau",
+    other: "Autres épreuves",
   },
   pricing: {
     title: "Voir plus de sujets",
@@ -473,6 +521,7 @@ const en: Dict = {
     signup: "Sign up",
     account: "My account",
     admin: "Admin",
+    exams: "My papers",
     language: "Language",
   },
   footer: {
@@ -546,9 +595,9 @@ const en: Dict = {
   },
   auth: {
     loginTitle: "Log in",
-    loginLead: "Open your faculty and programme",
+    loginLead: "Find your papers, organised by subject.",
     signupTitle: "Create an account",
-    signupLead: "Then open your faculty and programme",
+    signupLead: "Choose your faculty or institute, your programme and your year.",
     email: "Email",
     password: "Password",
     name: "Full name",
@@ -566,6 +615,7 @@ const en: Dict = {
     email: "Invalid email",
     password: "Password: at least 8 characters",
     password_required: "Password required",
+    password_mismatch: "The passwords do not match.",
     invalid: "Invalid data",
     exists: "An account already exists with this email",
     bad_login: "Incorrect email or password",
@@ -589,15 +639,37 @@ const en: Dict = {
     pickFaculty: "Choose your programme and year. The yearly subscription then opens that whole programme.",
     chooseFaculty: "Choose a faculty",
     logout: "Log out",
+    danger: {
+      zone: "Sign out",
+      lead: "This closes your session on this device.",
+      confirm: "Confirm",
+      cancel: "Cancel",
+    },
+    path: "Academic path",
     program: "Programme",
     objectives: "Goals",
     saveProfile: "Save profile",
+    nameSaved: "Name updated.",
+    passwordSaved: "Password updated.",
+    passwordConfirm: "Confirm password",
     scheduleTitle: "Exam calendar",
     scheduleLead: "The J-14 and J-7 reminders appear here. Automatic sending is not connected yet.",
     examLabel: "Title",
     examDate: "Exam date",
     addDate: "Add date",
     reminder: (date) => `Reminder on ${date}`,
+  },
+  space: {
+    hello: (name) => `Hello ${name}`,
+    lead: "Your papers for this year, organised by subject.",
+    emptyTitle: "No papers yet",
+    emptyLead: "As soon as a paper for your programme and year is added, it appears here, grouped by subject.",
+    emptyCourse: "No paper for this subject yet.",
+    papers: (count) => (count === 1 ? "1 paper" : `${count} papers`),
+    changeLevel: "Year",
+    levelHint: "You can move up a year once you are admitted.",
+    saveLevel: "Save year",
+    other: "Other papers",
   },
   pricing: {
     title: "See more papers",
@@ -724,6 +796,7 @@ const ar: Dict = {
     signup: "تسجيل",
     account: "حسابي",
     admin: "إدارة",
+    exams: "اختباراتي",
     language: "اللغة",
   },
   footer: {
@@ -797,9 +870,9 @@ const ar: Dict = {
   },
   auth: {
     loginTitle: "دخول",
-    loginLead: "ادخل إلى كليتك وشعبتك",
+    loginLead: "اعثر على اختباراتك، مرتبة حسب المادة.",
     signupTitle: "إنشاء حساب",
-    signupLead: "ثم ادخل إلى كليتك وشعبتك",
+    signupLead: "اختر كليتك أو معهدك، وشعبتك ومستواك.",
     email: "البريد الإلكتروني",
     password: "كلمة السر",
     name: "الاسم الكامل",
@@ -817,6 +890,7 @@ const ar: Dict = {
     email: "بريد إلكتروني غير صالح",
     password: "كلمة السر: 8 أحرف على الأقل",
     password_required: "كلمة السر مطلوبة",
+    password_mismatch: "كلمتا السر غير متطابقتين.",
     invalid: "بيانات غير صالحة",
     exists: "يوجد حساب بهذا البريد الإلكتروني",
     bad_login: "البريد أو كلمة السر غير صحيحة",
@@ -840,15 +914,37 @@ const ar: Dict = {
     pickFaculty: "اختر شعبتك ومستواك. الاشتراك السنوي يفتح بعد ذلك كل هذه الشعبة.",
     chooseFaculty: "اختيار كلية",
     logout: "تسجيل الخروج",
+    danger: {
+      zone: "تسجيل الخروج",
+      lead: "سيُغلق هذا جلستك على هذا الجهاز.",
+      confirm: "تأكيد",
+      cancel: "إلغاء",
+    },
+    path: "المسار الأكاديمي",
     program: "الشعبة",
     objectives: "الأهداف",
     saveProfile: "حفظ الملف",
+    nameSaved: "تم تحديث الاسم.",
+    passwordSaved: "تم تحديث كلمة السر.",
+    passwordConfirm: "تأكيد كلمة السر",
     scheduleTitle: "رزنامة الامتحانات",
     scheduleLead: "تظهر تذكيرات 14 يوما و7 أيام هنا. الإرسال التلقائي غير موصول بعد.",
     examLabel: "العنوان",
     examDate: "تاريخ الامتحان",
     addDate: "إضافة التاريخ",
     reminder: (date) => `تذكير في ${date}`,
+  },
+  space: {
+    hello: (name) => `مرحبا ${name}`,
+    lead: "اختبارات هذا المستوى، مرتبة حسب المادة.",
+    emptyTitle: "لا توجد اختبارات بعد",
+    emptyLead: "بمجرد إضافة اختبار لشعبتك ومستواك، يظهر هنا مرتبا حسب المادة.",
+    emptyCourse: "لا يوجد اختبار لهذه المادة.",
+    papers: (count) => (count === 1 ? "اختبار واحد" : `${count} اختبارات`),
+    changeLevel: "المستوى",
+    levelHint: "يمكنك الانتقال إلى المستوى الأعلى بعد النجاح.",
+    saveLevel: "حفظ المستوى",
+    other: "اختبارات أخرى",
   },
   pricing: {
     title: "عرض المزيد من المواضيع",

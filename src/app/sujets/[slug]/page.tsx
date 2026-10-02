@@ -46,7 +46,10 @@ export default async function SubjectDetailPage({
   const canAccess = await canAccessExam(subject.id, user?.id ?? null);
   const correction = canAccess ? await getCorrection(subject.id) : null;
   const fileUrl = canAccess ? await signedFileUrl(subject.filePath ?? correction?.file_path ?? null) : null;
-  const backHref = `/sujets?departement=${departmentSlug(subject.department)}&filiere=${filiereSlug(subject.faculty)}&niveau=${subject.level}`;
+  const backHref =
+    user?.role === "student" && user.programId
+      ? "/espace"
+      : `/sujets?departement=${departmentSlug(subject.department)}&filiere=${filiereSlug(subject.faculty)}&niveau=${subject.level}`;
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
@@ -54,10 +57,10 @@ export default async function SubjectDetailPage({
         href={backHref}
         className="inline-flex items-center gap-1 text-sm text-slate-600 hover:text-brand-600"
       >
-        <ArrowLeft className="h-4 w-4 rtl:rotate-180" /> {t.back}
+        <ArrowLeft className="h-4 w-4 rtl:rotate-180" /> {user?.role === "student" && user.programId ? dict.nav.exams : t.back}
       </Link>
 
-      <article className="mt-6 card">
+      <article className="mt-6 card border-t-4 border-t-brand-700">
         <div className="flex flex-wrap items-center gap-2">
           <span className="rounded-full bg-brand-100 px-3 py-1 text-sm font-medium text-brand-700">
             {localizeName(subject.department, locale)}
@@ -73,7 +76,7 @@ export default async function SubjectDetailPage({
           </span>
         </div>
 
-        <h1 className="mt-4 text-3xl font-bold">{subject.title}</h1>
+        <h1 className="mt-4 text-3xl font-bold tracking-tight text-brand-900">{subject.title}</h1>
 
         <div className="mt-4 flex flex-wrap gap-4 text-sm text-slate-500">
           <span className="flex items-center gap-1">

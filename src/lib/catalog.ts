@@ -28,6 +28,8 @@ export interface CatalogExam {
   examType: string;
   isFree: boolean;
   filePath: string | null;
+  courseId: string | null;
+  courseName: string | null;
   views: number;
   createdAt: string;
 }
@@ -44,9 +46,11 @@ interface ExamRow {
   exam_type: string;
   is_free: boolean;
   file_path: string | null;
+  course_id: string | null;
   views: number;
   created_at: string;
   programs: { name: string; departments: { name: string } | { name: string }[] | null } | { name: string; departments: { name: string } | { name: string }[] | null }[] | null;
+  courses: { name: string } | { name: string }[] | null;
 }
 
 function one<T>(value: T | T[] | null | undefined): T | null {
@@ -71,6 +75,8 @@ function mapExam(row: ExamRow): CatalogExam {
     examType: row.exam_type,
     isFree: row.is_free,
     filePath: row.file_path,
+    courseId: row.course_id,
+    courseName: one(row.courses)?.name ?? null,
     views: row.views,
     createdAt: row.created_at,
   };
@@ -102,7 +108,7 @@ export async function getExamCatalog(): Promise<CatalogExam[]> {
   const { data, error } = await supabase
     .from("exams")
     .select(
-      "id, title, slug, description, program_id, level, year, semester, exam_type, is_free, file_path, views, created_at, programs(name, departments(name))"
+      "id, title, slug, description, program_id, level, year, semester, exam_type, is_free, file_path, course_id, views, created_at, programs(name, departments(name)), courses(name)"
     )
     .order("title");
   if (error) throw error;

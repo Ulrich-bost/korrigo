@@ -112,3 +112,13 @@ export async function requireStaff() {
   if (user.role !== "admin" && user.role !== "super_admin") throw new Error("FORBIDDEN");
   return user;
 }
+
+export function landingPath(user: CurrentUser, requested: string) {
+  if (user.role !== "student") {
+    if (requested === "/espace" || requested === "/sujets" || requested === "/") return "/admin";
+    return requested;
+  }
+  if (!user.programId || !user.level) return "/compte";
+  if (requested.startsWith("/sujets/")) return requested;
+  return "/espace";
+}
